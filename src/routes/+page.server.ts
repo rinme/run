@@ -1,0 +1,29 @@
+import type { PageServerLoad } from './$types';
+import { db } from '#lib/server/db/index.ts';
+import { links, domains } from '#lib/server/db/schema.ts';
+import { desc, eq, sql } from 'drizzle-orm';
+
+export const load: PageServerLoad = async ({ locals }) => {
+	const allLinks = await db
+		.select()
+		.from(links)
+		.where(eq(links.isArchived, false))
+		.orderBy(desc(links.createdAt))
+		.limit(50);
+
+	const statsResult = await db
+		.select({
+			totalClicks: sql<number>`sum(${links.currentClicks})`
+		})
+		.from(links);
+
+	const allDomains = await db.select().from(domains);
+
+	return {
+		links: allLinks,
+		domains: allDomains,
+		totalClicks: Number(statsResult[0]?.totalClicks || 0),
+		user: locals.user,
+		session: locals.session
+	};
+};
