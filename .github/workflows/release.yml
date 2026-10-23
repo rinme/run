@@ -65,7 +65,7 @@ jobs:
       - name: Build Production Assets
         run: bun run build
 
-      - name: Run Release Script via GitHub CLI
+      - name: Run Release Script via GitHub CLI (Bun + TypeScript)
         id: create_release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -75,9 +75,7 @@ jobs:
           INPUT_GENERATE_NOTES: ${{ inputs.generate_notes }}
           INPUT_PRERELEASE: ${{ inputs.prerelease }}
           INPUT_DRAFT: ${{ inputs.draft }}
-        run: |
-          chmod +x ./scripts/release.sh
-          ./scripts/release.sh
+        run: bun scripts/release.ts
 
       - name: Workflow Summary
         run: |
