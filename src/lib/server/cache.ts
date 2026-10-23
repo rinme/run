@@ -32,20 +32,17 @@ if (redisUrl.startsWith('redis://') || redisUrl.startsWith('rediss://')) {
 	try {
 		const io = new IORedis(redisUrl, {
 			maxRetriesPerRequest: 1,
-			connectTimeout: 5000,
+			connectTimeout: 3000,
 			lazyConnect: true,
 			retryStrategy(times) {
-				if (times > 3) return null; // cease reconnection attempts after 3 tries
-				return Math.min(times * 150, 1000);
+				if (times > 2) return null; // cease reconnection attempts quickly in serverless
+				return Math.min(times * 150, 600);
 			}
 		});
 
 		io.on('error', (err) => {
 			console.warn('[Cache] TCP Redis notice:', err.message);
 		});
-
-		// Trigger connection lazily without blocking
-		io.connect().catch(() => {});
 
 		adapter = {
 			async get(key: string) {
