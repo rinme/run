@@ -10,7 +10,7 @@ import { APIError } from 'better-auth/api';
 
 export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) {
-		throw redirect(302, '/account');
+		throw redirect(302, '/');
 	}
 
 	const [userCount] = await db.select({ total: count() }).from(user);
@@ -59,7 +59,7 @@ export const actions: Actions = {
 			return fail(500, { message: 'Authentication service error', mode: 'signin' });
 		}
 
-		throw redirect(302, '/account');
+		throw redirect(302, '/');
 	},
 
 	signUp: async (event) => {
@@ -127,6 +127,6 @@ export const actions: Actions = {
 			return fail(500, { message: 'Registration error: ' + (error as Error).message, mode: 'signup' });
 		}
 
-		throw redirect(302, '/account');
+		throw redirect(302, '/');
 	}
 };

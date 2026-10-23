@@ -3,6 +3,7 @@ import { building } from '$app/env';
 import { auth } from '#lib/server/auth.ts';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { resolveShortLink } from '#lib/server/resolver.ts';
+import { redirect } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// 1. Resolve short links at the edge before hitting app route SSR
@@ -22,6 +23,21 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (session) {
 		event.locals.session = session.session;
 		event.locals.user = session.user as App.ExtendedUser;
+	}
+
+	// 3. Global Auth Guard: protect all private dashboard pages from unauthenticated access
+	const pathname = event.url.pathname;
+	const isPublicRoute =
+		pathname === '/login' ||
+		pathname.startsWith('/login/') ||
+		pathname.startsWith('/invite/') ||
+		pathname.startsWith('/api/') ||
+		pathname.startsWith('/demo/better-auth') ||
+		pathname === '/favicon.ico' ||
+		pathname === '/robots.txt';
+
+	if (!event.locals.user && !isPublicRoute) {
+		throw redirect(302, '/login');
 	}
 
 	return svelteKitHandler({ event, resolve, auth, building });

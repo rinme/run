@@ -5,12 +5,19 @@
 	import AppSidebar from '#lib/components/AppSidebar.svelte';
 	import CommandPalette from '#lib/components/CommandPalette.svelte';
 	import LinkDrawer from '#lib/components/LinkDrawer.svelte';
+	import { page } from '$app/state';
 
-	let { children }: LayoutProps = $props();
+	let { data, children }: LayoutProps = $props();
 
 	let isCommandPaletteOpen = $state(false);
 	let isLinkDrawerOpen = $state(false);
 	let linkToEdit = $state<any | null>(null);
+
+	const isAuthOrPublicPage = $derived(
+		page.url.pathname.startsWith('/login') ||
+		page.url.pathname.startsWith('/invite') ||
+		page.url.pathname.startsWith('/demo')
+	);
 
 	// Global keyboard shortcuts (Cmd+K / Ctrl+K)
 	function handleGlobalKeydown(e: KeyboardEvent) {
@@ -26,7 +33,6 @@
 	}
 
 	function handleSavedLink() {
-		// Dispatch event or reload links
 		if (typeof window !== 'undefined') {
 			window.dispatchEvent(new CustomEvent('run:links-updated'));
 		}
@@ -40,27 +46,35 @@
 	<title>Run — High-Performance Edge Link Platform</title>
 </svelte:head>
 
-<div class="min-h-screen bg-[#09090b] text-zinc-100 flex font-sans selection:bg-blue-600/30">
-	<!-- App Sidebar -->
-	<AppSidebar onOpenCommandPalette={() => (isCommandPaletteOpen = true)} />
-
-	<!-- Main Workspace Area -->
-	<div class="flex-1 flex flex-col min-w-0 overflow-y-auto min-h-screen">
+{#if !data.user || isAuthOrPublicPage}
+	<!-- Standalone Auth & Public Layout (No Sidebar) -->
+	<main class="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col font-sans selection:bg-blue-600/30">
 		{@render children()}
+	</main>
+{:else}
+	<!-- Authenticated Dashboard Layout (With Sidebar & Modals) -->
+	<div class="min-h-screen bg-[#09090b] text-zinc-100 flex font-sans selection:bg-blue-600/30">
+		<!-- App Sidebar -->
+		<AppSidebar onOpenCommandPalette={() => (isCommandPaletteOpen = true)} />
+
+		<!-- Main Workspace Area -->
+		<div class="flex-1 flex flex-col min-w-0 overflow-y-auto min-h-screen">
+			{@render children()}
+		</div>
+
+		<!-- Global Command Palette (Cmd+K) -->
+		<CommandPalette
+			isOpen={isCommandPaletteOpen}
+			onClose={() => (isCommandPaletteOpen = false)}
+			onCreateLink={openCreateLink}
+		/>
+
+		<!-- Global Link Drawer (Slide-over for Create & Edit) -->
+		<LinkDrawer
+			isOpen={isLinkDrawerOpen}
+			onClose={() => (isLinkDrawerOpen = false)}
+			link={linkToEdit}
+			onSuccess={handleSavedLink}
+		/>
 	</div>
-
-	<!-- Global Command Palette (Cmd+K) -->
-	<CommandPalette
-		isOpen={isCommandPaletteOpen}
-		onClose={() => (isCommandPaletteOpen = false)}
-		onCreateLink={openCreateLink}
-	/>
-
-	<!-- Global Link Drawer (Slide-over for Create & Edit) -->
-	<LinkDrawer
-		isOpen={isLinkDrawerOpen}
-		linkToEdit={linkToEdit}
-		onClose={() => (isLinkDrawerOpen = false)}
-		onSaved={handleSavedLink}
-	/>
-</div>
+{/if}

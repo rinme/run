@@ -1,9 +1,14 @@
 import type { PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
 import { db } from '#lib/server/db/index.ts';
 import { links, domains } from '#lib/server/db/schema.ts';
 import { desc, eq, sql } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.user) {
+		throw redirect(302, '/login');
+	}
+
 	const allLinks = await db
 		.select()
 		.from(links)
