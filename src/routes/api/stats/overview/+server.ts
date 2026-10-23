@@ -2,17 +2,24 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '#lib/server/db/index.ts';
 import { links } from '#lib/server/db/schema.ts';
-import { TINYBIRD_API_URL, TINYBIRD_TOKEN } from '$app/env/private';
 import { desc, sql } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ url }) => {
+	let tinybirdUrl = process.env.TINYBIRD_API_URL || '';
+	let tinybirdToken = process.env.TINYBIRD_TOKEN || '';
+	try {
+		const privateEnv = (await import('$app/env/private')) as Record<string, any>;
+		if (privateEnv?.TINYBIRD_API_URL) tinybirdUrl = privateEnv.TINYBIRD_API_URL;
+		if (privateEnv?.TINYBIRD_TOKEN) tinybirdToken = privateEnv.TINYBIRD_TOKEN;
+	} catch {}
+
 	// 1. If Tinybird is available, pull real aggregates
-	if (TINYBIRD_API_URL && TINYBIRD_TOKEN) {
+	if (tinybirdUrl && tinybirdToken) {
 		try {
 			const res = await fetch(
-				`${TINYBIRD_API_URL}/v0/pipes/analytics_overview.json`,
+				`${tinybirdUrl}/v0/pipes/analytics_overview.json`,
 				{
-					headers: { Authorization: `Bearer ${TINYBIRD_TOKEN}` }
+					headers: { Authorization: `Bearer ${tinybirdToken}` }
 				}
 			);
 			if (res.ok) {

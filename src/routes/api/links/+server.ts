@@ -5,6 +5,8 @@ import { links, type NewLink } from '#lib/server/db/schema.ts';
 import { linkCache } from '#lib/server/cache.ts';
 import { hashPassword } from '#lib/server/security.ts';
 import { dispatchWebhookEvent } from '#lib/server/webhooks.ts';
+import { authenticateApiRequest } from '#lib/server/api-auth.ts';
+import { RESERVED_PATHS } from '#lib/server/resolver.ts';
 import { eq, desc, and, ne } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ url }) => {
@@ -19,6 +21,11 @@ export const GET: RequestHandler = async ({ url }) => {
 };
 
 export const POST: RequestHandler = async ({ request, locals }) => {
+	const auth = await authenticateApiRequest(request, locals);
+	if (!auth.authenticated) {
+		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+	}
+
 	const data = await request.json();
 
 	if (!data.destinationUrl) {
@@ -28,6 +35,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	let slug = (data.slug || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
 	if (!slug) {
 		slug = Math.random().toString(36).substring(2, 8);
+	}
+
+	if (RESERVED_PATHS.has(slug)) {
+		return json({ error: `Slug "${slug}" is a reserved system path and cannot be short-linked.` }, { status: 400 });
 	}
 
 	// Check slug collision
@@ -46,11 +57,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		passwordHash = await hashPassword(data.password);
 	}
 
-	let workspaceId = data.workspaceId || (locals.session as { activeOrganizationId?: string } | undefined)?.activeOrganizationId;
-	if (!workspaceId) {
-		const org = await db.query?.organization?.findFirst?.();
-		workspaceId = org?.id || 'default-workspace';
-	}
+	const workspaceId = auth.workspaceId || 'default-workspace';
 
 	const newLink: NewLink = {
 		workspaceId,
@@ -85,7 +92,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	return json(created, { status: 201 });
 };
 
-export const PATCH: RequestHandler = async ({ request }) => {
+export const PATCH: RequestHandler = async ({ request, locals }) => {
+	const auth = await authenticateApiRequest(request, locals);
+	if (!auth.authenticated) {
+		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+	}
+
 	const data = await request.json();
 	const id = data.id;
 
@@ -101,6 +113,11 @@ export const PATCH: RequestHandler = async ({ request }) => {
 	let newSlug = currentLink.slug;
 	if (data.slug && data.slug.trim().toLowerCase() !== currentLink.slug) {
 		newSlug = data.slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+
+		if (RESERVED_PATHS.has(newSlug)) {
+			return json({ error: `Slug "${newSlug}" is a reserved system path and cannot be short-linked.` }, { status: 400 });
+		}
+
 		// check collision
 		const collision = await db
 			.select({ id: links.id })
@@ -153,7 +170,12 @@ export const PATCH: RequestHandler = async ({ request }) => {
 	return json(updated);
 };
 
-export const DELETE: RequestHandler = async ({ url }) => {
+export const DELETE: RequestHandler = async ({ url, request, locals }) => {
+	const auth = await authenticateApiRequest(request, locals);
+	if (!auth.authenticated) {
+		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+	}
+
 	const id = url.searchParams.get('id');
 	if (!id) {
 		return json({ error: 'Missing link id' }, { status: 400 });

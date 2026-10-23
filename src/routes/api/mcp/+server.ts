@@ -3,6 +3,8 @@ import type { RequestHandler } from './$types';
 import { db } from '#lib/server/db/index.ts';
 import { links, apiKeys, type NewLink } from '#lib/server/db/schema.ts';
 import { linkCache } from '#lib/server/cache.ts';
+import { authenticateApiRequest } from '#lib/server/api-auth.ts';
+import { RESERVED_PATHS } from '#lib/server/resolver.ts';
 import { eq, desc, and } from 'drizzle-orm';
 
 /**
@@ -17,7 +19,7 @@ interface JsonRpcRequest {
 	params?: Record<string, any>;
 }
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
 	let rpcReq: JsonRpcRequest;
 	try {
 		rpcReq = await request.json();
@@ -29,6 +31,19 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const { method, params = {}, id = 1 } = rpcReq;
+
+	// Require valid authentication for all MCP operations
+	const auth = await authenticateApiRequest(request, locals);
+	if (!auth.authenticated) {
+		return json(
+			{
+				jsonrpc: '2.0',
+				id,
+				error: { code: -32000, message: auth.error || 'Authentication required. Pass valid Bearer token.' }
+			},
+			{ status: 401 }
+		);
+	}
 
 	// 1. Tool Listing method
 	if (method === 'tools/list') {
@@ -115,6 +130,17 @@ export const POST: RequestHandler = async ({ request }) => {
 					slug = Math.random().toString(36).substring(2, 8);
 				}
 
+				if (RESERVED_PATHS.has(slug)) {
+					return json({
+						jsonrpc: '2.0',
+						id,
+						result: {
+							isError: true,
+							content: [{ type: 'text', text: `Slug "${slug}" is a reserved system path and cannot be used.` }]
+						}
+					});
+				}
+
 				// Check collision
 				const existing = await db
 					.select({ id: links.id })
@@ -134,7 +160,7 @@ export const POST: RequestHandler = async ({ request }) => {
 				}
 
 				const org = await db.query?.organization?.findFirst?.();
-				const workspaceId = org?.id || 'default-workspace';
+				const workspaceId = auth.workspaceId || org?.id || 'default-workspace';
 
 				const [created] = await db
 					.insert(links)

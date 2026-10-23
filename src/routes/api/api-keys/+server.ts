@@ -28,7 +28,11 @@ export const GET: RequestHandler = async () => {
 	return json(keys);
 };
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) {
+		return json({ error: 'Unauthorized: Sign in required to create API tokens.' }, { status: 401 });
+	}
+
 	const data = await request.json();
 	const name = (data.name || 'API Token').trim();
 	const scopes = Array.isArray(data.scopes) && data.scopes.length > 0 ? data.scopes : ['*'];
@@ -76,7 +80,11 @@ export const POST: RequestHandler = async ({ request }) => {
 	);
 };
 
-export const DELETE: RequestHandler = async ({ url }) => {
+export const DELETE: RequestHandler = async ({ url, locals }) => {
+	if (!locals.user) {
+		return json({ error: 'Unauthorized: Sign in required to revoke API tokens.' }, { status: 401 });
+	}
+
 	const id = url.searchParams.get('id');
 	if (!id) {
 		return json({ error: 'Missing key ID' }, { status: 400 });

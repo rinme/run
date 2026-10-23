@@ -4,8 +4,19 @@ import { db } from '#lib/server/db/index.ts';
 import { links, domains, utmTemplates, inviteCodes, siteSettings, webhooks } from '#lib/server/db/schema.ts';
 
 export const GET: RequestHandler = async ({ request }) => {
-	// 1. Verify cron authorization (Vercel Cron sends CRON_SECRET or auth header)
-	const authHeader = request.headers.get('authorization');
+	// 1. Verify cron authorization if CRON_SECRET is configured
+	let cronSecret = process.env.CRON_SECRET || '';
+	try {
+		const privateEnv = (await import('$app/env/private')) as Record<string, any>;
+		if (privateEnv?.CRON_SECRET) cronSecret = privateEnv.CRON_SECRET;
+	} catch {}
+
+	if (cronSecret) {
+		const authHeader = request.headers.get('authorization');
+		if (authHeader !== `Bearer ${cronSecret}`) {
+			return json({ error: 'Unauthorized: Invalid or missing CRON_SECRET' }, { status: 401 });
+		}
+	}
 
 	try {
 		const [allLinks, allDomains, allUtms, allInvites, allSettings, allHooks] = await Promise.all([

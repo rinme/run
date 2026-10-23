@@ -2,9 +2,14 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { generateText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { GOOGLE_GENERATIVE_AI_API_KEY } from '$app/env/private';
+import { authenticateApiRequest } from '#lib/server/api-auth.ts';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	const auth = await authenticateApiRequest(request, locals);
+	if (!auth.authenticated) {
+		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+	}
+
 	const body = await request.json();
 	const targetUrl = body.url;
 
@@ -12,11 +17,17 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ error: 'Missing target URL' }, { status: 400 });
 	}
 
+	let googleApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
+	try {
+		const privateEnv = (await import('$app/env/private')) as Record<string, any>;
+		if (privateEnv?.GOOGLE_GENERATIVE_AI_API_KEY) googleApiKey = privateEnv.GOOGLE_GENERATIVE_AI_API_KEY;
+	} catch {}
+
 	// 1. If Gemini API key is configured, call Gemini
-	if (GOOGLE_GENERATIVE_AI_API_KEY) {
+	if (googleApiKey) {
 		try {
 			const google = createGoogleGenerativeAI({
-				apiKey: GOOGLE_GENERATIVE_AI_API_KEY
+				apiKey: googleApiKey
 			});
 
 			const prompt = `You are a link shortener AI assistant for "Run".

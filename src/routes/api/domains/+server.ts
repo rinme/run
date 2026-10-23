@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '#lib/server/db/index.ts';
 import { domains } from '#lib/server/db/schema.ts';
+import { authenticateApiRequest } from '#lib/server/api-auth.ts';
 import { eq, desc } from 'drizzle-orm';
 
 export const GET: RequestHandler = async () => {
@@ -10,6 +11,11 @@ export const GET: RequestHandler = async () => {
 };
 
 export const POST: RequestHandler = async ({ request, locals }) => {
+	const auth = await authenticateApiRequest(request, locals);
+	if (!auth.authenticated) {
+		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+	}
+
 	const data = await request.json();
 	const name = (data.name || '').trim().toLowerCase();
 	const fallbackUrl = data.fallbackUrl || null;
@@ -28,8 +34,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'This domain is already registered.' }, { status: 409 });
 	}
 
-	const org = await db.query?.organization?.findFirst?.();
-	const workspaceId = org?.id || 'default-workspace';
+	const workspaceId = auth.workspaceId || 'default-workspace';
 
 	const [created] = await db
 		.insert(domains)
@@ -45,7 +50,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	return json(created, { status: 201 });
 };
 
-export const PATCH: RequestHandler = async ({ request }) => {
+export const PATCH: RequestHandler = async ({ request, locals }) => {
+	const auth = await authenticateApiRequest(request, locals);
+	if (!auth.authenticated) {
+		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+	}
+
 	const data = await request.json();
 	const id = data.id;
 
@@ -62,7 +72,12 @@ export const PATCH: RequestHandler = async ({ request }) => {
 	return json(updated);
 };
 
-export const DELETE: RequestHandler = async ({ url }) => {
+export const DELETE: RequestHandler = async ({ url, request, locals }) => {
+	const auth = await authenticateApiRequest(request, locals);
+	if (!auth.authenticated) {
+		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+	}
+
 	const id = url.searchParams.get('id');
 	if (!id) {
 		return json({ error: 'Missing domain id' }, { status: 400 });
