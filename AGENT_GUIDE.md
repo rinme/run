@@ -315,3 +315,40 @@ erDiagram
 2. **Observe KV Cache Invalidation:** Creating, updating, or deleting a link automatically calls `linkCache.invalidate(domain, slug)`. Subsequent requests will hit Turso LibSQL directly until KV re-populates.
 3. **Respect Rate Limits:** When polling `/api/stats/live`, maintain at least a 10-second polling interval and obey HTTP 429 backoff headers.
 4. **Use MCP for Pair Programming:** Point your AI agent client (Cursor, Claude Desktop, Antigravity) to `http://localhost:5173/api/mcp` using the Bearer token for autonomous link generation.
+
+---
+
+## 9. Autonomous Release Policy & Versioning Protocol
+
+Autonomous agents working on this repository must adhere to the following release automation rules:
+
+### 1. Automatic Release Trigger Criteria
+Whenever you finish implementing a feature, patch, or set of commits, evaluate whether to automatically cut a GitHub release:
+- **Scope Threshold:** The changes are **large or significant enough** (e.g., major feature additions such as dedicated mobile layouts, new delivery modes, authentication overhauls, security hardening, or critical platform bug fixes).
+- **Confidence Requirement:** You are **strictly confident that the feature or patch is working flawlessly**. This requires:
+  1. Running `bun run check` (`svelte-check`) with **zero errors and zero warnings**.
+  2. Verifying edge runtime safety (no Node.js native globals in edge paths without browser/web fallback).
+  3. Confirming that all database migrations and schema references match the live database.
+- **Action:** If both conditions are satisfied:
+  1. Bump the version in [`package.json`](file:///d:/MG/Coding/run/package.json) following Semantic Versioning (`minor` for feature additions, `patch` for fixes, `major` for breaking redesigns).
+  2. Commit the version bump with Conventional Commits (`chore(release): bump version to vX.Y.Z`).
+  3. Push to `main` (`git push origin main`).
+  4. Trigger release script: `bun scripts/release.ts vX.Y.Z --title "vX.Y.Z: <Descriptive Feature Title>" --generate-notes`.
+
+### 2. Failure Handling & Redo Protocol ("Redo Previous Release")
+If a release is published or tested and regressions, runtime errors, or broken builds are subsequently detected:
+- **Do not leave a broken release published as latest.**
+- **Redo Protocol:**
+  1. Investigate and locate the root cause immediately.
+  2. Apply the necessary fixes and run `bun run check` until completely passing.
+  3. Delete the broken GitHub release and remote tag:
+     ```bash
+     gh release delete <tag> -y
+     git tag -d <tag>
+     git push --delete origin <tag>
+     ```
+  4. Once confident and verified, re-create the release cleanly at the fixed commit:
+     ```bash
+     bun scripts/release.ts <tag> --title "vX.Y.Z: <Descriptive Title>" --generate-notes
+     ```
+
