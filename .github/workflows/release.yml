@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g., v1.2.0)'
+        required: false
+        type: string
+      title:
+        description: 'Release Title (e.g., v1.2.0: Invite-Only System & Discord Webhooks)'
+        required: false
+        type: string
+      notes:
+        description: 'Custom Release Notes (Leave empty to auto-generate from commits/PRs)'
+        required: false
+        type: string
+      generate_notes:
+        description: 'Automatically generate release notes from commits'
+        required: false
+        type: boolean
+        default: true
+      prerelease:
+        description: 'Mark as Pre-release'
+        required: false
+        type: boolean
+        default: false
+      draft:
+        description: 'Create as Draft'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history needed for commit log & auto-generated notes
+
+      - name: Setup Bun Runtime
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify Types & Svelte Components
+        run: bun run check
+
+      - name: Build Production Assets
+        run: bun run build
+
+      - name: Run Release Script via GitHub CLI
+        id: create_release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_TAG_NAME: ${{ inputs.tag_name }}
+          INPUT_TITLE: ${{ inputs.title }}
+          RELEASE_NOTES: ${{ inputs.notes }}
+          INPUT_GENERATE_NOTES: ${{ inputs.generate_notes }}
+          INPUT_PRERELEASE: ${{ inputs.prerelease }}
+          INPUT_DRAFT: ${{ inputs.draft }}
+        run: |
+          chmod +x ./scripts/release.sh
+          ./scripts/release.sh
+
+      - name: Workflow Summary
+        run: |
+          echo "### 🚀 GitHub Release Published" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** \`${{ steps.create_release.outputs.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release URL:** [View Release](${{ steps.create_release.outputs.release_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Already Existed:** \`${{ steps.create_release.outputs.already_existed }}\`" >> $GITHUB_STEP_SUMMARY
