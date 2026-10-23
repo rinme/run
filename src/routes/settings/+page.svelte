@@ -1,4 +1,6 @@
 <script lang="ts">
+	import type { PageData } from './$types';
+	import { page } from '$app/state';
 	import {
 		Settings,
 		Database,
@@ -11,6 +13,8 @@
 		Server,
 		AlertCircle
 	} from 'lucide-svelte';
+
+	let { data }: { data: PageData } = $props();
 
 	let isBackingUp = $state(false);
 	let backupResult = $state<any | null>(null);
@@ -69,7 +73,7 @@
 			</div>
 			<div class="p-3 bg-zinc-900/60 border border-zinc-800 rounded-lg">
 				<span class="text-zinc-500 block text-[10px] uppercase font-semibold">Default Edge Domain</span>
-				<span class="text-emerald-400 font-bold mt-1 block">go.run.link</span>
+				<span class="text-emerald-400 font-bold mt-1 block">{data?.siteConfig?.defaultDomain || page.url.host}</span>
 			</div>
 		</div>
 	</div>

@@ -142,7 +142,7 @@
 				class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-mono text-zinc-300 hover:text-white hover:border-zinc-700 transition-colors"
 			>
 				<span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-				<span>go.run.link</span>
+				<span>{data.siteConfig?.defaultDomain || 'go.run.link'}</span>
 			</a>
 
 			<button

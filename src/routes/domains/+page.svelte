@@ -27,6 +27,10 @@
 	let errorMessage = $state('');
 	let copiedRecord = $state<string | null>(null);
 
+	const cnameTarget = $derived(
+		`cname.${data.siteConfig?.defaultDomain || (typeof window !== 'undefined' ? window.location.host : 'run.link')}`
+	);
+
 	$effect.pre(() => {
 		domainList = [...(data.domains || [])];
 	});
@@ -202,11 +206,11 @@
 					<span class="w-16 font-semibold text-blue-400">CNAME</span>
 					<span class="text-zinc-300">go (or subdomain)</span>
 					<span class="text-zinc-400">&rarr;</span>
-					<span class="text-zinc-200 font-bold">cname.run.link</span>
+					<span class="text-zinc-200 font-bold">{cnameTarget}</span>
 				</div>
 				<button
 					type="button"
-					onclick={() => copyToClipboard('cname.run.link', 'cname')}
+					onclick={() => copyToClipboard(cnameTarget, 'cname')}
 					class="p-1 text-zinc-400 hover:text-white cursor-pointer"
 				>
 					{#if copiedRecord === 'cname'}

@@ -39,8 +39,16 @@ export interface SiteFeaturesConfig {
 export const DEFAULT_GENERAL_CONFIG: SiteGeneralConfig = {
 	siteTitle: 'Run',
 	siteTagline: 'High-Performance Edge-First Link Shortener & Analytics',
-	siteUrl: 'http://localhost:5173',
-	defaultDomain: 'go.run.link',
+	siteUrl: process.env.ORIGIN || 'http://localhost:5173',
+	defaultDomain: process.env.ORIGIN
+		? (() => {
+				try {
+					return new URL(process.env.ORIGIN).host;
+				} catch {
+					return 'go.run.link';
+				}
+			})()
+		: 'go.run.link',
 	defaultDeliveryMode: 'direct'
 };
 

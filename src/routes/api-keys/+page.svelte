@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
+	import { page } from '$app/state';
 	import {
 		KeyRound,
 		Plus,
@@ -17,6 +18,12 @@
 	}
 
 	let { data }: PageProps = $props();
+
+	const originUrl = $derived(
+		typeof window !== 'undefined'
+			? window.location.origin
+			: (data.siteConfig?.siteUrl || 'http://localhost:5173')
+	);
 
 	let keyList = $state<typeof data.keys>([]);
 	let isCreateModalOpen = $state(false);
@@ -203,7 +210,7 @@
   "mcpServers": {
     "run": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch", "${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173'}/api/mcp"]
+      "args": ["-y", "@modelcontextprotocol/server-fetch", "${originUrl}/api/mcp"]
     }
   }
 }`, 'mcp-json')}
@@ -227,7 +234,7 @@
   "mcpServers": {
     "run": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch", "http://localhost:5173/api/mcp"]
+      "args": ["-y", "@modelcontextprotocol/server-fetch", "${originUrl}/api/mcp"]
     }
   }
 }`}</code></pre>
@@ -242,7 +249,7 @@
 				</h3>
 				<button
 					type="button"
-					onclick={() => copyText(`curl -X POST http://localhost:5173/api/links \\
+					onclick={() => copyText(`curl -X POST ${originUrl}/api/links \\
   -H "Authorization: Bearer run_live_YOUR_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"destinationUrl": "https://news.ycombinator.com", "slug": "hn"}'`, 'curl')}
@@ -262,7 +269,7 @@
 				Create links programmatically from any CLI, bash script, or microservice:
 			</p>
 
-			<pre class="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-[11px] font-mono text-zinc-300 overflow-x-auto leading-relaxed"><code>curl -X POST http://localhost:5173/api/links \
+			<pre class="p-3 bg-zinc-950 border border-zinc-800 rounded-lg text-[11px] font-mono text-zinc-300 overflow-x-auto leading-relaxed"><code>curl -X POST {originUrl}/api/links \
   -H "Authorization: Bearer run_live_YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '&#123;"destinationUrl": "https://news.ycombinator.com", "slug": "hn"&#125;'</code></pre>

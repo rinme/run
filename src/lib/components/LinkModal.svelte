@@ -590,7 +590,7 @@
 								<div class="text-[11px] text-zinc-400 mt-0.5 line-clamp-2">{description || 'Your custom link description will be displayed when shared on social platforms.'}</div>
 								<div class="text-[10px] text-zinc-500 font-mono mt-2 flex items-center gap-1">
 									<Globe class="w-3 h-3" />
-									run.link/{slug || 'slug'}
+									{selectedDomain || (typeof window !== 'undefined' ? window.location.host : 'run.link')}/{slug || 'slug'}
 								</div>
 							</div>
 						</div>

@@ -128,7 +128,7 @@ export const actions: Actions = {
 			'test.ping',
 			{
 				slug: 'run-test',
-				destinationUrl: 'https://run.link/demo',
+				destinationUrl: `${event.url.origin}/demo`,
 				country: 'US',
 				city: 'San Francisco',
 				deviceType: 'Desktop',

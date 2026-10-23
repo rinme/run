@@ -7,7 +7,7 @@
 	const initialUrl = $derived(
 		typeof window !== 'undefined'
 			? `${window.location.origin}/${initialSlug}`
-			: `https://run.link/${initialSlug}`
+			: `${page.url.origin}/${initialSlug}`
 	);
 </script>
 

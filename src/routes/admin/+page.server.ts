@@ -38,6 +38,12 @@ export const load: PageServerLoad = async (event) => {
 
 	// 1. Load System Settings
 	const settings = await getAllSiteSettings();
+	if (settings.general.siteUrl === 'http://localhost:5173') {
+		settings.general.siteUrl = process.env.ORIGIN || event.url.origin;
+	}
+	if (settings.general.defaultDomain === 'go.run.link') {
+		settings.general.defaultDomain = event.url.host;
+	}
 
 	// 2. Load System Stats
 	const [userCount] = await db.select({ total: count() }).from(user);
@@ -91,8 +97,8 @@ export const actions: Actions = {
 		const general: SiteGeneralConfig = {
 			siteTitle: formData.get('siteTitle')?.toString().trim() || 'Run',
 			siteTagline: formData.get('siteTagline')?.toString().trim() || '',
-			siteUrl: formData.get('siteUrl')?.toString().trim() || 'http://localhost:5173',
-			defaultDomain: formData.get('defaultDomain')?.toString().trim() || 'go.run.link',
+			siteUrl: formData.get('siteUrl')?.toString().trim() || event.url.origin,
+			defaultDomain: formData.get('defaultDomain')?.toString().trim() || event.url.host,
 			defaultDeliveryMode: formData.get('defaultDeliveryMode')?.toString().trim() || 'direct'
 		};
 

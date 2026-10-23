@@ -11,7 +11,7 @@
 	const isBrowser = typeof window !== 'undefined';
 
 	let {
-		url = 'https://run.link/demo',
+		url = (isBrowser ? `${window.location.origin}/demo` : 'https://demo'),
 		slug = 'demo'
 	}: QrProps = $props();
 
