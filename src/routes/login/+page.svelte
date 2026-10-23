@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { ActionData, PageServerData } from './$types';
-	import { Lock, ArrowRight, ShieldCheck, Ticket, User, Mail, Key } from 'lucide-svelte';
+	import { Lock, ArrowRight, Shield, ShieldCheck, Ticket, User, Mail, Key } from 'lucide-svelte';
 
 	let { data, form }: { data: PageServerData; form: ActionData } = $props();
 
-	let activeTab = $state<'signin' | 'signup'>('signin');
+	let activeTab = $state<'signin' | 'signup'>(data.isFirstUser ? 'signup' : 'signin');
 	let inviteCodeInput = $state('');
 	let isSubmitting = $state(false);
 
@@ -63,7 +63,9 @@
 						: 'text-zinc-400 hover:text-zinc-200'}"
 				>
 					Register
-					{#if data.registrationMode === 'invite_only'}
+					{#if data.isFirstUser}
+						<span class="ml-1 text-[10px] text-emerald-400 font-mono">(Setup Admin)</span>
+					{:else if data.registrationMode === 'invite_only'}
 						<span class="ml-1 text-[10px] text-amber-400/90 font-mono">(Invite)</span>
 					{/if}
 				</button>
@@ -159,8 +161,18 @@
 						}}
 						class="space-y-4"
 					>
-						<!-- Invite Code Badge / Input -->
-						{#if data.registrationMode === 'invite_only'}
+						<!-- First User Setup Banner OR Invite Code Badge / Input -->
+						{#if data.isFirstUser}
+							<div class="p-3.5 rounded-lg border border-emerald-500/30 bg-emerald-950/20 text-emerald-200">
+								<div class="flex items-center gap-1.5 font-medium text-xs text-emerald-300 mb-1">
+									<Shield class="w-4 h-4 text-emerald-400" />
+									Initial Administrator Setup
+								</div>
+								<p class="text-[11px] text-zinc-400 leading-relaxed">
+									No users exist yet. The first account created will automatically become the <span class="text-emerald-300 font-semibold">Super Administrator</span> with full system control. No invite code needed!
+								</p>
+							</div>
+						{:else if data.registrationMode === 'invite_only'}
 							<div class="p-3 rounded-lg border border-amber-500/20 bg-amber-950/20">
 								<div class="flex items-center justify-between mb-1.5">
 									<label for="signup-invite" class="text-xs font-medium text-amber-300 flex items-center gap-1.5">

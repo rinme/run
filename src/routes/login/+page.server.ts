@@ -13,6 +13,9 @@ export const load: PageServerLoad = async (event) => {
 		throw redirect(302, '/account');
 	}
 
+	const [userCount] = await db.select({ total: count() }).from(user);
+	const isFirstUser = (userCount?.total ?? 0) === 0;
+
 	const authConfig = await getSiteSetting<SiteAuthConfig>('auth', DEFAULT_AUTH_CONFIG);
 	const inviteCode = event.url.searchParams.get('code') || '';
 
@@ -28,7 +31,8 @@ export const load: PageServerLoad = async (event) => {
 	}
 
 	return {
-		registrationMode: authConfig.registrationMode,
+		isFirstUser,
+		registrationMode: isFirstUser ? 'open' : authConfig.registrationMode,
 		initialInviteCode: inviteCode,
 		inviteDetails
 	};
@@ -69,16 +73,19 @@ export const actions: Actions = {
 			return fail(400, { message: 'Name, email, and password are required', mode: 'signup' });
 		}
 
+		const [userCount] = await db.select({ total: count() }).from(user);
+		const isFirstUser = (userCount?.total ?? 0) === 0;
+
 		const authConfig = await getSiteSetting<SiteAuthConfig>('auth', DEFAULT_AUTH_CONFIG);
 
-		// Check registration mode gate
-		if (authConfig.registrationMode === 'closed') {
+		// Check registration mode gate (first user always allowed to bootstrap admin)
+		if (!isFirstUser && authConfig.registrationMode === 'closed') {
 			return fail(403, { message: 'Registration is currently closed by the system administrator.', mode: 'signup' });
 		}
 
-		let grantedRole: 'admin' | 'trusted' | 'member' = 'member';
+		let grantedRole: 'admin' | 'trusted' | 'member' = isFirstUser ? 'admin' : 'member';
 
-		if (authConfig.registrationMode === 'invite_only') {
+		if (!isFirstUser && authConfig.registrationMode === 'invite_only') {
 			if (!inviteCode) {
 				return fail(400, {
 					message: 'An invite code is required to register on this system.',
@@ -102,9 +109,7 @@ export const actions: Actions = {
 				body: { email, password, name, callbackURL: '/' }
 			});
 
-			// If this is the first user ever, elevate to super admin
-			const [userCount] = await db.select({ total: count() }).from(user);
-			if (userCount.total <= 1) {
+			if (isFirstUser) {
 				grantedRole = 'admin';
 			}
 
