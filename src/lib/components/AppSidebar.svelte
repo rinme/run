@@ -14,7 +14,8 @@
 		Webhook,
 		History,
 		Shield,
-		User
+		User,
+		Smartphone
 	} from 'lucide-svelte';
 
 	interface SidebarProps {
@@ -149,6 +150,22 @@
 					<span>/api/mcp (JSON-RPC)</span>
 				</span>
 				<ExternalLink class="w-3.5 h-3.5 text-zinc-600" />
+			</a>
+		</div>
+
+		<div class="pt-4 mt-4 border-t border-zinc-800/60">
+			<div class="text-[10px] uppercase font-mono font-semibold tracking-wider text-zinc-500 px-2 mb-2">
+				Experience
+			</div>
+			<a
+				href="/api/view-mode?mode=mobile&redirect=/m"
+				class="flex items-center justify-between px-2.5 py-2 rounded-lg text-xs text-zinc-300 hover:text-white bg-zinc-900/60 hover:bg-zinc-800/80 border border-zinc-800/80 transition-colors group"
+			>
+				<div class="flex items-center gap-2.5">
+					<Smartphone class="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+					<span class="font-medium">Switch to Mobile</span>
+				</div>
+				<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">/m</span>
 			</a>
 		</div>
 	</nav>

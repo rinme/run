@@ -13,10 +13,11 @@
 	let isLinkDrawerOpen = $state(false);
 	let linkToEdit = $state<any | null>(null);
 
-	const isAuthOrPublicPage = $derived(
+	const isCustomShellPage = $derived(
 		page.url.pathname.startsWith('/login') ||
 		page.url.pathname.startsWith('/invite') ||
-		page.url.pathname.startsWith('/demo')
+		page.url.pathname.startsWith('/demo') ||
+		page.url.pathname.startsWith('/m')
 	);
 
 	// Global keyboard shortcuts (Cmd+K / Ctrl+K)
@@ -46,8 +47,8 @@
 	<title>Run — High-Performance Edge Link Platform</title>
 </svelte:head>
 
-{#if !data.user || isAuthOrPublicPage}
-	<!-- Standalone Auth & Public Layout (No Sidebar) -->
+{#if !data.user || isCustomShellPage}
+	<!-- Standalone Auth, Public & Dedicated Mobile Layout (No Desktop Sidebar) -->
 	<main class="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col font-sans selection:bg-blue-600/30">
 		{@render children()}
 	</main>

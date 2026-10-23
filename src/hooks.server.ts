@@ -4,6 +4,7 @@ import { auth } from '#lib/server/auth.ts';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { resolveShortLink } from '#lib/server/resolver.ts';
 import { redirect } from '@sveltejs/kit';
+import { UAParser } from 'ua-parser-js';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// 1. Resolve short links at the edge before hitting app route SSR
@@ -38,6 +39,35 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	if (!event.locals.user && !isPublicRoute) {
 		throw redirect(302, '/login');
+	}
+
+	// 4. Mobile Device Auto-Detection & View Mode Routing
+	if (!building && event.locals.user && !isPublicRoute) {
+		const viewModeCookie = event.cookies.get('run_view_mode');
+		const userAgent = event.request.headers.get('user-agent') || '';
+		const parser = new UAParser(userAgent);
+		const deviceType = parser.getDevice().type;
+		const isMobileDevice = deviceType === 'mobile' || deviceType === 'tablet';
+
+		const prefersDesktop = viewModeCookie === 'desktop';
+		const prefersMobile = viewModeCookie === 'mobile' || (!viewModeCookie && isMobileDevice);
+
+		if (prefersDesktop && pathname.startsWith('/m')) {
+			// Redirect from /m/* to desktop equivalent
+			const desktopPath = pathname === '/m' ? '/' : pathname.replace(/^\/m/, '');
+			throw redirect(302, desktopPath);
+		} else if (prefersMobile && !pathname.startsWith('/m')) {
+			// If on a page with a dedicated mobile counterpart, redirect to /m/*
+			if (pathname === '/') {
+				throw redirect(302, '/m');
+			} else if (pathname === '/analytics') {
+				throw redirect(302, '/m/analytics');
+			} else if (pathname === '/qr') {
+				throw redirect(302, '/m/qr');
+			} else if (pathname === '/account') {
+				throw redirect(302, '/m/account');
+			}
+		}
 	}
 
 	return svelteKitHandler({ event, resolve, auth, building });
