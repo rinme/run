@@ -5,12 +5,12 @@
 
 	let { data, form }: { data: PageServerData; form: ActionData } = $props();
 
-	let activeTab = $state<'signin' | 'signup'>(data.isFirstUser ? 'signup' : 'signin');
+	let activeTab = $state<'signin' | 'signup'>('signin');
 	let inviteCodeInput = $state('');
 	let isSubmitting = $state(false);
 
 	$effect(() => {
-		if (data.initialInviteCode || form?.mode === 'signup') {
+		if (data.isFirstUser || data.initialInviteCode || form?.mode === 'signup') {
 			activeTab = 'signup';
 		}
 		if (data.initialInviteCode) {

@@ -73,8 +73,8 @@
 		<LinkDrawer
 			isOpen={isLinkDrawerOpen}
 			onClose={() => (isLinkDrawerOpen = false)}
-			link={linkToEdit}
-			onSuccess={handleSavedLink}
+			linkToEdit={linkToEdit}
+			onSaved={handleSavedLink}
 		/>
 	</div>
 {/if}
