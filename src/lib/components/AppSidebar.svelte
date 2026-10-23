@@ -10,7 +10,11 @@
 		Command,
 		ExternalLink,
 		Activity,
-		ChevronRight
+		ChevronRight,
+		Webhook,
+		History,
+		Shield,
+		User
 	} from 'lucide-svelte';
 
 	interface SidebarProps {
@@ -25,9 +29,16 @@
 		{ label: 'Links', href: '/', icon: Link2, exact: true },
 		{ label: 'Analytics & Globe', href: '/analytics', icon: BarChart3 },
 		{ label: 'QR Studio', href: '/qr', icon: QrCode },
+		{ label: 'Webhooks & Discord', href: '/webhooks', icon: Webhook },
 		{ label: 'Custom Domains', href: '/domains', icon: Globe },
 		{ label: 'API Keys & MCP', href: '/api-keys', icon: KeyRound },
+		{ label: 'Changelog', href: '/changelog', icon: History },
 		{ label: 'Settings & Backups', href: '/settings', icon: Settings }
+	];
+
+	const managementItems = [
+		{ label: 'Account & Security', href: '/account', icon: User },
+		{ label: 'Admin Control', href: '/admin', icon: Shield }
 	];
 
 	function isActive(href: string, exact = false): boolean {
@@ -91,6 +102,29 @@
 				{/if}
 			</a>
 		{/each}
+
+		<div class="pt-4 mt-4 border-t border-zinc-800/60">
+			<div class="text-[10px] uppercase font-mono font-semibold tracking-wider text-zinc-500 px-2 mb-2">
+				Administration
+			</div>
+			{#each managementItems as item}
+				{@const active = isActive(item.href)}
+				<a
+					href={item.href}
+					class="flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-colors {active
+						? 'bg-zinc-800 text-zinc-100 font-semibold shadow-xs'
+						: 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850/60'}"
+				>
+					<div class="flex items-center gap-2.5">
+						<item.icon class="w-4 h-4 {active ? 'text-purple-400' : 'text-zinc-500'}" />
+						<span>{item.label}</span>
+					</div>
+					{#if active}
+						<div class="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+					{/if}
+				</a>
+			{/each}
+		</div>
 
 		<div class="pt-4 mt-4 border-t border-zinc-800/60">
 			<div class="text-[10px] uppercase font-mono font-semibold tracking-wider text-zinc-500 px-2 mb-2">

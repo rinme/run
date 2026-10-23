@@ -11,6 +11,15 @@ export const auth = betterAuth({
 	secret: BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'sqlite' }),
 	emailAndPassword: { enabled: true },
+	user: {
+		additionalFields: {
+			role: {
+				type: 'string',
+				required: false,
+				defaultValue: 'member'
+			}
+		}
+	},
 	plugins: [
 		organization(),
 		bearer(),

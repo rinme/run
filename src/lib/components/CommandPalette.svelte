@@ -12,7 +12,11 @@
 		Download,
 		Terminal,
 		ArrowRight,
-		X
+		X,
+		Webhook,
+		History,
+		Shield,
+		User
 	} from 'lucide-svelte';
 
 	interface CommandProps {
@@ -37,8 +41,12 @@
 		{ id: 'links', title: 'Go to Links Table', category: 'Navigation', icon: Link2, action: () => { onClose(); goto('/'); } },
 		{ id: 'analytics', title: 'Go to Analytics & 3D Globe', category: 'Navigation', icon: BarChart3, action: () => { onClose(); goto('/analytics'); } },
 		{ id: 'qr', title: 'Go to QR Code Studio', category: 'Navigation', icon: QrCode, action: () => { onClose(); goto('/qr'); } },
+		{ id: 'webhooks', title: 'Go to Webhooks & Discord Embeds', category: 'Navigation', icon: Webhook, action: () => { onClose(); goto('/webhooks'); } },
 		{ id: 'domains', title: 'Go to Custom Domains', category: 'Navigation', icon: Globe, action: () => { onClose(); goto('/domains'); } },
 		{ id: 'api', title: 'Go to API Keys & MCP Server', category: 'Navigation', icon: KeyRound, action: () => { onClose(); goto('/api-keys'); } },
+		{ id: 'changelog', title: 'Go to Changelog & Releases', category: 'Navigation', icon: History, action: () => { onClose(); goto('/changelog'); } },
+		{ id: 'account', title: 'Go to Account & Security', category: 'Navigation', icon: User, action: () => { onClose(); goto('/account'); } },
+		{ id: 'admin', title: 'Go to Admin System Control', category: 'Navigation', icon: Shield, action: () => { onClose(); goto('/admin'); } },
 		{ id: 'settings', title: 'Go to Settings & Backups', category: 'Navigation', icon: Settings, action: () => { onClose(); goto('/settings'); } },
 		{ id: 'backup', title: 'Trigger Database Snapshot Backup', category: 'Actions', icon: Download, action: () => { onClose(); goto('/settings#backup'); } }
 	];

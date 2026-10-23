@@ -4,6 +4,7 @@ import { db } from '#lib/server/db/index.ts';
 import { links, type NewLink } from '#lib/server/db/schema.ts';
 import { linkCache } from '#lib/server/cache.ts';
 import { hashPassword } from '#lib/server/security.ts';
+import { dispatchWebhookEvent } from '#lib/server/webhooks.ts';
 import { eq, desc, and, ne } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ url }) => {
@@ -74,6 +75,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 	const [created] = await db.insert(links).values(newLink).returning();
 	await linkCache.invalidate(null, slug);
+
+	dispatchWebhookEvent(workspaceId, 'link.created', {
+		slug: created.slug,
+		destinationUrl: created.destinationUrl,
+		deliveryMode: created.deliveryMode
+	}).catch(() => {});
 
 	return json(created, { status: 201 });
 };

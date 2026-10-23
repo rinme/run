@@ -186,8 +186,85 @@ export const utmTemplatesRelations = relations(utmTemplates, ({ one }) => ({
 	})
 }));
 
+/**
+ * Invite-only registration codes (e.g. RUN-VIP-ABCD)
+ */
+export const inviteCodes = sqliteTable(
+	'invite_codes',
+	{
+		id: text('id')
+			.primaryKey()
+			.$defaultFn(() => crypto.randomUUID()),
+		code: text('code').notNull().unique(), // e.g. "RUN-VIP-8F32A"
+		creatorId: text('creator_id'),
+		maxUses: integer('max_uses').notNull().default(1),
+		usedCount: integer('used_count').notNull().default(0),
+		role: text('role').notNull().default('member'), // role to assign on use: 'admin' | 'trusted' | 'member'
+		expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
+		isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' })
+			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+			.notNull()
+	},
+	(table) => [uniqueIndex('invite_codes_code_idx').on(table.code)]
+);
+
+/**
+ * Dynamic Website Configuration Store (Site metadata, registration mode, email/SMTP settings, feature toggles)
+ */
+export const siteSettings = sqliteTable('site_settings', {
+	key: text('key').primaryKey(), // 'general' | 'auth' | 'email' | 'features' | 'changelog'
+	value: text('value').notNull(), // JSON payload string
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.$onUpdate(() => new Date())
+		.notNull()
+});
+
+/**
+ * Outgoing Webhooks with automatic Discord embed customization
+ */
+export const webhooks = sqliteTable(
+	'webhooks',
+	{
+		id: text('id')
+			.primaryKey()
+			.$defaultFn(() => crypto.randomUUID()),
+		workspaceId: text('workspace_id')
+			.notNull()
+			.references(() => organization.id, { onDelete: 'cascade' }),
+		name: text('name').notNull(),
+		url: text('url').notNull(),
+		secret: text('secret'),
+		events: text('events').notNull().default('["link.clicked"]'), // JSON array: 'link.created', 'link.clicked', 'security.blocked'
+		isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+		isDiscord: integer('is_discord', { mode: 'boolean' }).notNull().default(false),
+		discordConfig: text('discord_config'), // JSON: { username?: string, avatarUrl?: string, embedColor?: number }
+		lastTriggeredAt: integer('last_triggered_at', { mode: 'timestamp_ms' }),
+		failureCount: integer('failure_count').notNull().default(0),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' })
+			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+			.notNull(),
+		updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+			.$onUpdate(() => new Date())
+			.notNull()
+	},
+	(table) => [index('webhooks_workspaceId_idx').on(table.workspaceId)]
+);
+
+export const webhooksRelations = relations(webhooks, ({ one }) => ({
+	workspace: one(organization, {
+		fields: [webhooks.workspaceId],
+		references: [organization.id]
+	})
+}));
+
 export type Link = typeof links.$inferSelect;
 export type NewLink = typeof links.$inferInsert;
 export type Domain = typeof domains.$inferSelect;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type UtmTemplate = typeof utmTemplates.$inferSelect;
+export type InviteCode = typeof inviteCodes.$inferSelect;
+export type SiteSetting = typeof siteSettings.$inferSelect;
+export type Webhook = typeof webhooks.$inferSelect;

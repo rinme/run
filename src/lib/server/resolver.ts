@@ -3,6 +3,7 @@ import { links, domains, type Link, type Domain } from './db/schema';
 import { linkCache } from './cache';
 import { parseClientMetadata, trackClickEvent } from './analytics';
 import { verifyPassword, verifyAgeToken } from './security';
+import { dispatchWebhookEvent } from './webhooks';
 import { eq, and, isNull } from 'drizzle-orm';
 
 export const RESERVED_PATHS = new Set([
@@ -15,7 +16,16 @@ export const RESERVED_PATHS = new Set([
 	'sitemap.xml',
 	'_app',
 	'admin',
-	'auth'
+	'auth',
+	'account',
+	'changelog',
+	'invite',
+	'webhooks',
+	'qr',
+	'analytics',
+	'domains',
+	'api-keys',
+	'settings'
 ]);
 
 export interface ResolutionResult {
@@ -204,6 +214,20 @@ export async function resolveShortLink(
 		referer: meta.referer,
 		ip: meta.ip
 	}).catch((err) => console.error('Track click error:', err));
+
+	// Asynchronously dispatch click webhook
+	dispatchWebhookEvent(link.workspaceId, 'link.clicked', {
+		slug: link.slug,
+		destinationUrl: finalTargetUrl,
+		deliveryMode: link.deliveryMode,
+		country: meta.country,
+		city: meta.city,
+		deviceType: meta.deviceType,
+		browser: meta.browser,
+		os: meta.os,
+		referer: meta.referer,
+		ip: meta.ip
+	}).catch((err) => console.warn('Webhook dispatch error:', err));
 
 	// 6. Security Gates & Delivery Modes
 	switch (link.deliveryMode) {

@@ -1,11 +1,15 @@
-import type { User, Session } from 'better-auth';
+import type { User as BetterAuthUser, Session } from 'better-auth';
 
 // See https://svelte.dev/docs/kit/types#app.d.ts
 // for information about these interfaces
 declare global {
 	namespace App {
+		interface ExtendedUser extends BetterAuthUser {
+			role?: 'admin' | 'trusted' | 'member' | string | null;
+		}
+
 		interface Locals {
-			user?: User;
+			user?: ExtendedUser;
 			session?: Session;
 		}
 

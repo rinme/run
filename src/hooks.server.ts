@@ -21,7 +21,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	if (session) {
 		event.locals.session = session.session;
-		event.locals.user = session.user;
+		event.locals.user = session.user as App.ExtendedUser;
 	}
 
 	return svelteKitHandler({ event, resolve, auth, building });
