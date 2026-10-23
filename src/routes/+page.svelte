@@ -7,17 +7,17 @@
 		Copy,
 		ExternalLink,
 		QrCode,
-		Globe as GlobeIcon,
-		Activity,
-		Shield,
-		Clock,
 		Check,
-		Radio
+		Edit3,
+		Trash2,
+		ShieldCheck,
+		Sparkles,
+		Clock,
+		Activity,
+		Filter,
+		Share2
 	} from 'lucide-svelte';
-	import LinkModal from '#lib/components/LinkModal.svelte';
-	import Globe from '#lib/components/Globe.svelte';
-	import QrStudio from '#lib/components/QrStudio.svelte';
-	import { LiveQueueManager } from '#lib/client/live-queue.svelte.ts';
+	import LinkDrawer from '#lib/components/LinkDrawer.svelte';
 
 	interface PageProps {
 		data: PageData;
@@ -25,358 +25,356 @@
 
 	let { data }: PageProps = $props();
 
-	// Local links state
 	let linkList = $state<typeof data.links>([]);
+	let searchQuery = $state('');
+	let selectedMode = $state<string>('all');
+	let sortBy = $state<'latest' | 'clicks' | 'slug'>('latest');
+
+	// Drawer state
+	let isDrawerOpen = $state(false);
+	let activeEditLink = $state<any | null>(null);
+	let copiedId = $state<string | null>(null);
 
 	$effect.pre(() => {
 		linkList = [...(data.links || [])];
 	});
-	let searchQuery = $state('');
-	let isModalOpen = $state(false);
-	let activeTab = $state<'links' | 'analytics' | 'qr'>('links');
-	let selectedQrUrl = $state('https://run.link');
-	let selectedQrSlug = $state('run');
-	let copiedId = $state<string | null>(null);
 
-	// Svelte 5 Live Queue Manager
-	const liveQueue = new LiveQueueManager(25);
-
+	// Listen for global links update event
 	$effect(() => {
-		if (activeTab === 'analytics') {
-			liveQueue.start();
-		} else {
-			liveQueue.stop();
-		}
-		return () => {
-			liveQueue.stop();
+		const handleUpdate = async () => {
+			const res = await fetch('/api/links');
+			if (res.ok) {
+				const fresh = await res.json();
+				linkList = fresh;
+			}
 		};
+		window.addEventListener('run:links-updated', handleUpdate);
+		return () => window.removeEventListener('run:links-updated', handleUpdate);
 	});
 
-	// Filtered links
-	let filteredLinks = $derived(
-		linkList.filter(
-			(l) =>
+	// Filtered & Sorted links
+	let processedLinks = $derived.by(() => {
+		let list = linkList.filter((l) => {
+			const matchesQuery =
 				l.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
 				l.destinationUrl.toLowerCase().includes(searchQuery.toLowerCase()) ||
-				(l.title && l.title.toLowerCase().includes(searchQuery.toLowerCase()))
-		)
-	);
+				(l.title && l.title.toLowerCase().includes(searchQuery.toLowerCase())) ||
+				(l.tags && l.tags.toLowerCase().includes(searchQuery.toLowerCase()));
 
-	let totalClicksCount = $derived(
+			const matchesMode = selectedMode === 'all' || l.deliveryMode === selectedMode;
+
+			return matchesQuery && matchesMode;
+		});
+
+		if (sortBy === 'clicks') {
+			list.sort((a, b) => (b.currentClicks || 0) - (a.currentClicks || 0));
+		} else if (sortBy === 'slug') {
+			list.sort((a, b) => a.slug.localeCompare(b.slug));
+		} else {
+			list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+		}
+
+		return list;
+	});
+
+	let totalClicks = $derived(
 		linkList.reduce((acc, curr) => acc + (curr.currentClicks || 0), 0)
 	);
 
-	function copyToClipboard(slug: string, id: string) {
-		const fullUrl = `${window.location.origin}/${slug}`;
-		navigator.clipboard.writeText(fullUrl);
+	function copyShortUrl(slug: string, id: string) {
+		const url = `${window.location.origin}/${slug}`;
+		navigator.clipboard.writeText(url);
 		copiedId = id;
 		setTimeout(() => {
 			if (copiedId === id) copiedId = null;
 		}, 2000);
 	}
 
-	function openQrFor(slug: string) {
-		selectedQrSlug = slug;
-		selectedQrUrl = `${window.location.origin}/${slug}`;
-		activeTab = 'qr';
+	function openCreateDrawer() {
+		activeEditLink = null;
+		isDrawerOpen = true;
 	}
 
-	function handleLinkCreated(newLink: any) {
-		linkList = [newLink, ...linkList];
+	function openEditDrawer(link: any) {
+		activeEditLink = link;
+		isDrawerOpen = true;
+	}
+
+	async function handleDeleteLink(id: string, slug: string) {
+		if (!confirm(`Are you sure you want to delete /${slug}? This action is immediate.`)) return;
+
+		try {
+			const res = await fetch(`/api/links?id=${id}`, { method: 'DELETE' });
+			if (res.ok) {
+				linkList = linkList.filter((l) => l.id !== id);
+			}
+		} catch (e) {
+			console.error('Delete error:', e);
+		}
+	}
+
+	function handleSaved(savedLink: any) {
+		const idx = linkList.findIndex((l) => l.id === savedLink.id);
+		if (idx >= 0) {
+			linkList[idx] = savedLink;
+		} else {
+			linkList = [savedLink, ...linkList];
+		}
 	}
 </script>
 
-<svelte:head>
-	<title>Run — High-Performance Edge Link Platform</title>
-</svelte:head>
-
-<div class="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col font-sans selection:bg-blue-600/30">
-	<!-- Top Navigation Bar -->
-	<header class="border-b border-zinc-800/80 bg-zinc-950/60 backdrop-blur sticky top-0 z-40">
-		<div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-			<div class="flex items-center gap-3">
-				<div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-black tracking-tighter text-white shadow-lg shadow-blue-600/20">
-					R
-				</div>
-				<div>
-					<span class="font-bold text-base tracking-tight text-white flex items-center gap-2">
-						Run
-						<span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">Edge v2.0</span>
-					</span>
-				</div>
-			</div>
-
-			<div class="flex items-center gap-3">
-				<a
-					href="/api/openapi.json"
-					target="_blank"
-					class="text-xs text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-md hover:bg-zinc-800 transition-colors font-mono"
-				>
-					OpenAPI
-				</a>
-				<a
-					href="/api/mcp"
-					target="_blank"
-					class="text-xs text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded-md hover:bg-zinc-800 transition-colors font-mono"
-				>
-					MCP Server
-				</a>
-				<button
-					onclick={() => (isModalOpen = true)}
-					class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-all"
-				>
-					<Plus class="w-4 h-4" />
-					Create Link
-				</button>
-			</div>
+<div class="p-8 max-w-7xl w-full mx-auto space-y-6">
+	<!-- Top Bar Header -->
+	<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80">
+		<div>
+			<h1 class="text-xl font-bold tracking-tight text-zinc-100 flex items-center gap-2.5">
+				<span>Short Links</span>
+				<span class="text-xs font-mono font-normal text-zinc-400 bg-zinc-850 px-2.5 py-0.5 rounded-full border border-zinc-750">
+					{linkList.length} total
+				</span>
+			</h1>
+			<p class="text-xs text-zinc-400 mt-0.5">High-speed edge routing, security delivery gates, and targeting</p>
 		</div>
-	</header>
 
-	<!-- Main Content Area -->
-	<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
-		<!-- Metric Counters Overview Cards -->
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-			<div class="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-5 shadow-sm">
-				<div class="flex items-center justify-between text-zinc-400 mb-2">
-					<span class="text-xs font-medium">Total Short Links</span>
-					<Link2 class="w-4 h-4 text-blue-400" />
-				</div>
-				<div class="text-2xl font-bold tracking-tight text-white">{linkList.length}</div>
-				<p class="text-[11px] text-zinc-500 mt-1 font-mono">Active on edge</p>
-			</div>
+		<div class="flex items-center gap-2.5">
+			<a
+				href="/domains"
+				class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-mono text-zinc-300 hover:text-white hover:border-zinc-700 transition-colors"
+			>
+				<span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+				<span>go.run.link</span>
+			</a>
 
-			<div class="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-5 shadow-sm">
-				<div class="flex items-center justify-between text-zinc-400 mb-2">
-					<span class="text-xs font-medium">Total Clicks Tracked</span>
-					<Activity class="w-4 h-4 text-emerald-400" />
-				</div>
-				<div class="text-2xl font-bold tracking-tight text-white">{totalClicksCount.toLocaleString()}</div>
-				<p class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
-					<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-					Tinybird Stream Ingest
-				</p>
-			</div>
+			<button
+				type="button"
+				onclick={openCreateDrawer}
+				class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-all cursor-pointer"
+			>
+				<Plus class="w-4 h-4" />
+				<span>Create Link</span>
+			</button>
+		</div>
+	</div>
 
-			<div class="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-5 shadow-sm">
-				<div class="flex items-center justify-between text-zinc-400 mb-2">
-					<span class="text-xs font-medium">KV Cache Resolution</span>
-					<Clock class="w-4 h-4 text-amber-400" />
-				</div>
-				<div class="text-2xl font-bold tracking-tight text-white">&lt; 8ms</div>
-				<p class="text-[11px] text-zinc-500 mt-1 font-mono">Upstash Redis write-through</p>
-			</div>
+	<!-- KPI Summary Row (taste-skill anti-slop: clean data numbers, no colored icon circles) -->
+	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+		<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
+			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Total Links</div>
+			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">{linkList.length}</div>
+			<div class="text-[11px] text-zinc-400 mt-1">Active in workspace</div>
+		</div>
 
-			<div class="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-5 shadow-sm">
-				<div class="flex items-center justify-between text-zinc-400 mb-2">
-					<span class="text-xs font-medium">Delivery Security</span>
-					<Shield class="w-4 h-4 text-purple-400" />
-				</div>
-				<div class="text-2xl font-bold tracking-tight text-white">6 Modes</div>
-				<p class="text-[11px] text-purple-400 mt-1">PBKDF2 &amp; HMAC Age Gates</p>
+		<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
+			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Total Clicks Tracked</div>
+			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">{totalClicks.toLocaleString()}</div>
+			<div class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
+				<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+				<span>Tinybird Ingestion Stream</span>
 			</div>
 		</div>
 
-		<!-- Main Tab Switcher -->
-		<div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-			<div class="flex gap-2">
-				<button
-					onclick={() => (activeTab = 'links')}
-					class="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors {activeTab === 'links' ? 'bg-zinc-800 text-white border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200'}"
-				>
-					<Link2 class="w-3.5 h-3.5" />
-					All Links ({linkList.length})
-				</button>
-				<button
-					onclick={() => (activeTab = 'analytics')}
-					class="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors {activeTab === 'analytics' ? 'bg-zinc-800 text-white border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200'}"
-				>
-					<GlobeIcon class="w-3.5 h-3.5" />
-					Live Globe &amp; Analytics
-				</button>
-				<button
-					onclick={() => (activeTab = 'qr')}
-					class="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-colors {activeTab === 'qr' ? 'bg-zinc-800 text-white border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200'}"
-				>
-					<QrCode class="w-3.5 h-3.5" />
-					QR Studio
-				</button>
-			</div>
-
-			{#if activeTab === 'links'}
-				<div class="relative w-64">
-					<Search class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" />
-					<input
-						type="text"
-						bind:value={searchQuery}
-						placeholder="Search by slug, url, title..."
-						class="w-full pl-9 pr-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-blue-500"
-					/>
-				</div>
-			{/if}
+		<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
+			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">KV Cache Resolution</div>
+			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">&lt; 8ms</div>
+			<div class="text-[11px] text-zinc-400 mt-1">Upstash Redis write-through</div>
 		</div>
 
-		<!-- TAB 1: ALL LINKS TABLE -->
-		{#if activeTab === 'links'}
-			{#if filteredLinks.length === 0}
-				<div class="text-center py-16 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-8">
-					<div class="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4 text-zinc-500">
-						<Link2 class="w-6 h-6" />
-					</div>
-					<h3 class="text-base font-semibold text-zinc-200">No links found</h3>
-					<p class="text-xs text-zinc-400 max-w-sm mx-auto mt-1 mb-6">
-						Create your first high-performance short link with device targeting, password gates, and live analytics.
-					</p>
-					<button
-						onclick={() => (isModalOpen = true)}
-						class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm"
-					>
-						<Plus class="w-4 h-4" />
-						Create Short Link
-					</button>
-				</div>
-			{:else}
-				<div class="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden divide-y divide-zinc-800/80 shadow-sm">
-					{#each filteredLinks as link (link.id)}
-						<div class="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-zinc-800/30 transition-colors">
-							<div class="space-y-1.5 min-w-0 flex-1">
-								<div class="flex items-center gap-2">
-									<a
-										href="/{link.slug}"
-										target="_blank"
-										class="text-sm font-bold text-blue-400 hover:text-blue-300 font-mono tracking-tight flex items-center gap-1"
-									>
-										/{link.slug}
-										<ExternalLink class="w-3.5 h-3.5 opacity-60" />
-									</a>
+		<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
+			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Active Delivery Modes</div>
+			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">6 Modes</div>
+			<div class="text-[11px] text-zinc-400 mt-1">PBKDF2 &bull; Age Gate &bull; Interstitial</div>
+		</div>
+	</div>
 
-									<!-- Delivery Mode Pill -->
-									{#if link.deliveryMode !== 'direct'}
-										<span class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
-											{link.deliveryMode.replace('_', ' ')}
-										</span>
-									{/if}
+	<!-- Search & Filter Controls -->
+	<div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-2">
+		<!-- Search Input -->
+		<div class="relative flex-1 max-w-md">
+			<Search class="w-4 h-4 text-zinc-500 absolute left-3 top-2.5" />
+			<input
+				type="text"
+				bind:value={searchQuery}
+				placeholder="Search by slug, destination, title, tags..."
+				class="w-full pl-9 pr-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+			/>
+		</div>
 
-									<!-- Click / Expire rules badge -->
-									{#if link.maxClicks}
-										<span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
-											Limit: {link.currentClicks}/{link.maxClicks}
-										</span>
-									{/if}
-								</div>
+		<!-- Delivery Mode Filter Chips -->
+		<div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+			{#each [
+				{ id: 'all', label: 'All' },
+				{ id: 'direct', label: 'Direct' },
+				{ id: 'password', label: 'Password' },
+				{ id: 'age_gate', label: '18+ Gate' },
+				{ id: 'interstitial', label: 'Countdown' },
+				{ id: 'cloaked', label: 'Cloaked' }
+			] as mode}
+				<button
+					type="button"
+					onclick={() => (selectedMode = mode.id)}
+					class="px-2.5 py-1 text-xs rounded-md transition-colors cursor-pointer capitalize font-medium {selectedMode === mode.id
+						? 'bg-zinc-800 text-white border border-zinc-700'
+						: 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850'}"
+				>
+					{mode.label}
+				</button>
+			{/each}
 
-								<div class="text-xs text-zinc-400 truncate max-w-xl font-mono">
-									{link.destinationUrl}
-								</div>
+			<select
+				bind:value={sortBy}
+				class="ml-2 px-2.5 py-1 bg-zinc-900 border border-zinc-800 rounded-md text-xs text-zinc-300 focus:outline-none focus:border-zinc-700 cursor-pointer"
+			>
+				<option value="latest">Sort: Latest</option>
+				<option value="clicks">Sort: Most Clicks</option>
+				<option value="slug">Sort: Slug (A-Z)</option>
+			</select>
+		</div>
+	</div>
 
-								{#if link.title}
-									<div class="text-xs text-zinc-300 font-medium">{link.title}</div>
-								{/if}
-							</div>
+	<!-- Links Data Table -->
+	{#if processedLinks.length === 0}
+		<div class="text-center py-20 bg-[#101013] border border-zinc-800 rounded-xl p-8">
+			<div class="w-10 h-10 rounded-full bg-zinc-850 flex items-center justify-center mx-auto mb-3 text-zinc-500">
+				<Link2 class="w-5 h-5" />
+			</div>
+			<h3 class="text-sm font-semibold text-zinc-200">No short links match your filter</h3>
+			<p class="text-xs text-zinc-400 max-w-sm mx-auto mt-1 mb-5">
+				{searchQuery ? `No links found matching "${searchQuery}"` : 'Get started by creating your first short link with edge routing.'}
+			</p>
+			<button
+				type="button"
+				onclick={openCreateDrawer}
+				class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-sm cursor-pointer"
+			>
+				<Plus class="w-4 h-4" />
+				Create Link
+			</button>
+		</div>
+	{:else}
+		<div class="bg-[#101013] border border-zinc-800/90 rounded-xl overflow-hidden divide-y divide-zinc-800/80 shadow-xs">
+			{#each processedLinks as link (link.id)}
+				<div
+					id={link.id}
+					class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-zinc-850/30 transition-colors group"
+				>
+					<!-- Left: Slug & Details -->
+					<div class="space-y-1.5 min-w-0 flex-1">
+						<div class="flex items-center gap-2 flex-wrap">
+							<a
+								href="/{link.slug}"
+								target="_blank"
+								class="text-sm font-bold text-blue-400 hover:text-blue-300 font-mono tracking-tight flex items-center gap-1"
+							>
+								/{link.slug}
+								<ExternalLink class="w-3.5 h-3.5 opacity-60" />
+							</a>
 
-							<!-- Action Buttons -->
-							<div class="flex items-center gap-2 sm:gap-4 shrink-0">
-								<!-- Click count badge -->
-								<div class="text-right">
-									<div class="text-xs font-bold text-zinc-200">{link.currentClicks} clicks</div>
-									<div class="text-[10px] text-zinc-500 font-mono">
-										{new Date(link.createdAt).toLocaleDateString()}
-									</div>
-								</div>
+							<!-- Delivery Mode Tag -->
+							{#if link.deliveryMode !== 'direct'}
+								<span class="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-zinc-850 text-zinc-300 border border-zinc-750">
+									{link.deliveryMode.replace('_', ' ')}
+								</span>
+							{/if}
 
-								<div class="flex items-center gap-1 bg-zinc-950 p-1 rounded-lg border border-zinc-800">
-									<button
-										title="Copy link"
-										onclick={() => copyToClipboard(link.slug, link.id)}
-										class="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
-									>
-										{#if copiedId === link.id}
-											<Check class="w-3.5 h-3.5 text-emerald-400" />
-										{:else}
-											<Copy class="w-3.5 h-3.5" />
-										{/if}
-									</button>
+							<!-- Click Limit / Expire Badge -->
+							{#if link.maxClicks}
+								<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+									{link.currentClicks} / {link.maxClicks} clicks
+								</span>
+							{/if}
 
-									<button
-										title="Generate QR code"
-										onclick={() => openQrFor(link.slug)}
-										class="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors"
-									>
-										<QrCode class="w-3.5 h-3.5" />
-									</button>
-								</div>
-							</div>
+							<!-- A/B Split Indicator -->
+							{#if link.abSplits}
+								<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+									A/B Split
+								</span>
+							{/if}
 						</div>
-					{/each}
-				</div>
-			{/if}
-		{/if}
 
-		<!-- TAB 2: LIVE 3D GLOBE & ANALYTICS -->
-		{#if activeTab === 'analytics'}
-			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-				<!-- Left 2 Cols: 3D Interactive WebGL Globe -->
-				<div class="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl h-[450px] overflow-hidden relative shadow-lg">
-					<Globe className="w-full h-full" />
-				</div>
-
-				<!-- Right Col: Pseudo-Live Stream Replay Queue -->
-				<div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col h-[450px] shadow-lg">
-					<div class="flex items-center justify-between pb-3 border-b border-zinc-800 mb-3">
-						<div class="flex items-center gap-2">
-							<Radio class="w-4 h-4 text-emerald-400 animate-pulse" />
-							<h3 class="text-xs font-bold tracking-wide uppercase text-zinc-200">Live Traffic Queue</h3>
+						<div class="text-xs text-zinc-400 truncate max-w-xl font-mono">
+							{link.destinationUrl}
 						</div>
-						<span class="text-[11px] font-mono text-zinc-500">{liveQueue.activeCount} buffered</span>
-					</div>
 
-					<div class="flex-1 overflow-y-auto space-y-2 pr-1">
-						{#if liveQueue.events.length === 0}
-							<div class="text-center py-20 text-xs text-zinc-500">
-								Streaming live click events...
-							</div>
-						{:else}
-							{#each liveQueue.events as ev (ev.id)}
-								<div class="p-2.5 bg-zinc-950/80 border border-zinc-800/80 rounded-lg text-xs space-y-1 animate-in fade-in slide-in-from-top-1 duration-300">
-									<div class="flex items-center justify-between">
-										<span class="font-mono text-blue-400 font-semibold">/{ev.slug}</span>
-										<span class="text-[10px] font-mono text-zinc-500">{new Date(ev.timestamp).toLocaleTimeString()}</span>
-									</div>
-									<div class="flex items-center justify-between text-[11px] text-zinc-400">
-										<span>📍 {ev.city}, {ev.country}</span>
-										<span class="capitalize text-zinc-500">{ev.deviceType} • {ev.browser}</span>
-									</div>
+						{#if link.title}
+							<div class="text-xs text-zinc-300 font-medium">{link.title}</div>
+						{/if}
+
+						<!-- Tags -->
+						{#if link.tags}
+							{@const tagsList = (() => { try { return JSON.parse(link.tags); } catch { return []; } })()}
+							{#if tagsList.length > 0}
+								<div class="flex items-center gap-1.5 pt-0.5">
+									{#each tagsList as tag}
+										<span class="text-[10px] font-mono text-zinc-400 bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
+											#{tag}
+										</span>
+									{/each}
 								</div>
-							{/each}
+							{/if}
 						{/if}
 					</div>
-				</div>
-			</div>
-		{/if}
 
-		<!-- TAB 3: QR STUDIO -->
-		{#if activeTab === 'qr'}
-			<div class="space-y-4">
-				<div class="flex items-center justify-between">
-					<div>
-						<h2 class="text-lg font-bold text-zinc-100">QR Code Studio</h2>
-						<p class="text-xs text-zinc-400">Generate high-resolution vector SVG and PNG QR codes with branded styling</p>
+					<!-- Right: Click count & Action Buttons -->
+					<div class="flex items-center gap-4 shrink-0 justify-between sm:justify-end">
+						<div class="text-right">
+							<div class="text-xs font-bold text-zinc-100 font-mono">{link.currentClicks.toLocaleString()} clicks</div>
+							<div class="text-[10px] text-zinc-400 font-mono">
+								{new Date(link.createdAt).toLocaleDateString()}
+							</div>
+						</div>
+
+						<!-- Action Controls Bar -->
+						<div class="flex items-center gap-1 bg-zinc-900 p-1 rounded-lg border border-zinc-800">
+							<button
+								title="Copy short link"
+								type="button"
+								onclick={() => copyShortUrl(link.slug, link.id)}
+								class="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors cursor-pointer"
+							>
+								{#if copiedId === link.id}
+									<Check class="w-3.5 h-3.5 text-emerald-400" />
+								{:else}
+									<Copy class="w-3.5 h-3.5" />
+								{/if}
+							</button>
+
+							<a
+								title="Open in QR Studio"
+								href="/qr?slug={link.slug}"
+								class="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors"
+							>
+								<QrCode class="w-3.5 h-3.5" />
+							</a>
+
+							<button
+								title="Edit link"
+								type="button"
+								onclick={() => openEditDrawer(link)}
+								class="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors cursor-pointer"
+							>
+								<Edit3 class="w-3.5 h-3.5" />
+							</button>
+
+							<button
+								title="Delete link"
+								type="button"
+								onclick={() => handleDeleteLink(link.id, link.slug)}
+								class="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded transition-colors cursor-pointer"
+							>
+								<Trash2 class="w-3.5 h-3.5" />
+							</button>
+						</div>
 					</div>
 				</div>
-
-				<QrStudio url={selectedQrUrl} slug={selectedQrSlug} />
-			</div>
-		{/if}
-	</main>
-
-	<!-- Footer -->
-	<footer class="border-t border-zinc-900 py-6 text-center text-xs text-zinc-600 font-mono">
-		Project Run &bull; SvelteKit 2 + Svelte 5 &bull; Turso &bull; Tinybird &bull; Vercel Edge
-	</footer>
-
-	<!-- Tabbed Link Editor Modal -->
-	<LinkModal
-		isOpen={isModalOpen}
-		onClose={() => (isModalOpen = false)}
-		onCreated={handleLinkCreated}
-	/>
+			{/each}
+		</div>
+	{/if}
 </div>
+
+<!-- Slide-Over Drawer -->
+<LinkDrawer
+	isOpen={isDrawerOpen}
+	linkToEdit={activeEditLink}
+	onClose={() => (isDrawerOpen = false)}
+	onSaved={handleSaved}
+/>

@@ -1,22 +1,19 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '#lib/server/db/index.ts';
-import { links, domains, type NewLink } from '#lib/server/db/schema.ts';
+import { links, type NewLink } from '#lib/server/db/schema.ts';
 import { linkCache } from '#lib/server/cache.ts';
 import { hashPassword } from '#lib/server/security.ts';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and, ne } from 'drizzle-orm';
 
-export const GET: RequestHandler = async ({ url, locals }) => {
-	const workspaceId = url.searchParams.get('workspaceId');
-
-	const query = db
+export const GET: RequestHandler = async ({ url }) => {
+	const allLinks = await db
 		.select()
 		.from(links)
 		.where(eq(links.isArchived, false))
 		.orderBy(desc(links.createdAt))
-		.limit(50);
+		.limit(100);
 
-	const allLinks = await query;
 	return json(allLinks);
 };
 
@@ -27,7 +24,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'Destination URL is required' }, { status: 400 });
 	}
 
-	// Default slug if not provided
 	let slug = (data.slug || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
 	if (!slug) {
 		slug = Math.random().toString(36).substring(2, 8);
@@ -44,16 +40,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: `Slug "${slug}" is already taken.` }, { status: 409 });
 	}
 
-	// Hash password if password mode
-	let passwordHash: string | undefined = undefined;
+	let passwordHash: string | null = null;
 	if (data.deliveryMode === 'password' && data.password) {
 		passwordHash = await hashPassword(data.password);
 	}
 
-	// Fallback workspace id if no org session yet
 	let workspaceId = data.workspaceId || (locals.session as { activeOrganizationId?: string } | undefined)?.activeOrganizationId;
 	if (!workspaceId) {
-		// Use or create a default workspace
 		const org = await db.query?.organization?.findFirst?.();
 		workspaceId = org?.id || 'default-workspace';
 	}
@@ -76,13 +69,94 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		geoRouting: data.geoRouting ? JSON.stringify(data.geoRouting) : null,
 		abSplits: data.abSplits ? JSON.stringify(data.abSplits) : null,
 		utmPreset: data.utmPreset ? JSON.stringify(data.utmPreset) : null,
-		tags: data.tags ? JSON.stringify(data.tags) : null
+		tags: data.tags ? (typeof data.tags === 'string' ? data.tags : JSON.stringify(data.tags)) : null
 	};
 
 	const [created] = await db.insert(links).values(newLink).returning();
-
-	// Invalidate cache
 	await linkCache.invalidate(null, slug);
 
 	return json(created, { status: 201 });
+};
+
+export const PATCH: RequestHandler = async ({ request }) => {
+	const data = await request.json();
+	const id = data.id;
+
+	if (!id) {
+		return json({ error: 'Link ID is required for updating' }, { status: 400 });
+	}
+
+	const [currentLink] = await db.select().from(links).where(eq(links.id, id)).limit(1);
+	if (!currentLink) {
+		return json({ error: 'Link not found' }, { status: 404 });
+	}
+
+	let newSlug = currentLink.slug;
+	if (data.slug && data.slug.trim().toLowerCase() !== currentLink.slug) {
+		newSlug = data.slug.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+		// check collision
+		const collision = await db
+			.select({ id: links.id })
+			.from(links)
+			.where(and(eq(links.slug, newSlug), ne(links.id, id)))
+			.limit(1);
+
+		if (collision.length > 0) {
+			return json({ error: `Slug "${newSlug}" is already taken.` }, { status: 409 });
+		}
+	}
+
+	let passwordHash = currentLink.passwordHash;
+	if (data.deliveryMode === 'password') {
+		if (data.password) {
+			passwordHash = await hashPassword(data.password);
+		}
+	} else {
+		passwordHash = null;
+	}
+
+	const updatePayload: Partial<NewLink> = {
+		slug: newSlug,
+		destinationUrl: data.destinationUrl || currentLink.destinationUrl,
+		title: data.title !== undefined ? data.title : currentLink.title,
+		description: data.description !== undefined ? data.description : currentLink.description,
+		image: data.image !== undefined ? data.image : currentLink.image,
+		deliveryMode: data.deliveryMode || currentLink.deliveryMode,
+		passwordHash,
+		interstitialDuration: data.interstitialDuration !== undefined ? Number(data.interstitialDuration) : currentLink.interstitialDuration,
+		expiresAt: data.expiresAt ? new Date(data.expiresAt) : data.expiresAt === null ? null : currentLink.expiresAt,
+		maxClicks: data.maxClicks !== undefined ? (data.maxClicks ? Number(data.maxClicks) : null) : currentLink.maxClicks,
+		expiredRedirectUrl: data.expiredRedirectUrl !== undefined ? data.expiredRedirectUrl : currentLink.expiredRedirectUrl,
+		redirectWithQuery: data.redirectWithQuery !== undefined ? Boolean(data.redirectWithQuery) : currentLink.redirectWithQuery,
+		deviceRouting: data.deviceRouting !== undefined ? (data.deviceRouting ? JSON.stringify(data.deviceRouting) : null) : currentLink.deviceRouting,
+		geoRouting: data.geoRouting !== undefined ? (data.geoRouting ? JSON.stringify(data.geoRouting) : null) : currentLink.geoRouting,
+		abSplits: data.abSplits !== undefined ? (data.abSplits ? JSON.stringify(data.abSplits) : null) : currentLink.abSplits,
+		utmPreset: data.utmPreset !== undefined ? (data.utmPreset ? JSON.stringify(data.utmPreset) : null) : currentLink.utmPreset,
+		tags: data.tags !== undefined ? (data.tags ? (typeof data.tags === 'string' ? data.tags : JSON.stringify(data.tags)) : null) : currentLink.tags
+	};
+
+	const [updated] = await db.update(links).set(updatePayload).where(eq(links.id, id)).returning();
+
+	// Invalidate both old and new slug in cache
+	await linkCache.invalidate(null, currentLink.slug);
+	if (newSlug !== currentLink.slug) {
+		await linkCache.invalidate(null, newSlug);
+	}
+
+	return json(updated);
+};
+
+export const DELETE: RequestHandler = async ({ url }) => {
+	const id = url.searchParams.get('id');
+	if (!id) {
+		return json({ error: 'Missing link id' }, { status: 400 });
+	}
+
+	const [link] = await db.select().from(links).where(eq(links.id, id)).limit(1);
+	if (link) {
+		await db.delete(links).where(eq(links.id, id));
+		await linkCache.invalidate(null, link.slug);
+	}
+
+	return json({ success: true, id });
 };
