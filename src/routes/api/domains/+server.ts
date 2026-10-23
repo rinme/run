@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '#lib/server/db/index.ts';
 import { domains } from '#lib/server/db/schema.ts';
-import { authenticateApiRequest } from '#lib/server/api-auth.ts';
+import { authenticateApiRequest, getOrCreateDefaultWorkspace } from '#lib/server/api-auth.ts';
 import { eq, desc } from 'drizzle-orm';
 
 export const GET: RequestHandler = async () => {
@@ -34,7 +34,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'This domain is already registered.' }, { status: 409 });
 	}
 
-	const workspaceId = auth.workspaceId || 'default-workspace';
+	const workspaceId = auth.workspaceId || (await getOrCreateDefaultWorkspace(auth.userId));
 
 	const [created] = await db
 		.insert(domains)

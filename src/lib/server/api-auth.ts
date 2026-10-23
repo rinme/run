@@ -1,5 +1,5 @@
 import { db } from './db';
-import { apiKeys, organization } from './db/schema';
+import { apiKeys, organization, member } from './db/schema';
 import { eq } from 'drizzle-orm';
 
 export interface ApiAuthResult {
@@ -23,6 +23,47 @@ export async function hashApiToken(token: string): Promise<string> {
 }
 
 /**
+ * Ensures that a valid organization exists in the database and returns its ID.
+ * Creates 'default-workspace' if no organization exists yet.
+ */
+export async function getOrCreateDefaultWorkspace(userId?: string): Promise<string> {
+	try {
+		const [existing] = await db.select({ id: organization.id }).from(organization).limit(1);
+		if (existing?.id) {
+			return existing.id;
+		}
+
+		const defaultId = 'default-workspace';
+		await db
+			.insert(organization)
+			.values({
+				id: defaultId,
+				name: 'Primary Workspace',
+				slug: 'default',
+				createdAt: new Date()
+			})
+			.onConflictDoNothing();
+
+		if (userId) {
+			await db
+				.insert(member)
+				.values({
+					id: crypto.randomUUID(),
+					organizationId: defaultId,
+					userId: userId,
+					role: 'owner',
+					createdAt: new Date()
+				})
+				.onConflictDoNothing();
+		}
+
+		return defaultId;
+	} catch {
+		return 'default-workspace';
+	}
+}
+
+/**
  * Authenticates an incoming request using either a Better Auth session
  * OR a Bearer API token ("run_live_...")
  */
@@ -32,11 +73,9 @@ export async function authenticateApiRequest(
 ): Promise<ApiAuthResult> {
 	// 1. Check Better Auth session from cookie
 	if (locals.user) {
-		const org = await db.query?.organization?.findFirst?.();
-		const workspaceId =
-			(locals.session as { activeOrganizationId?: string } | undefined)?.activeOrganizationId ||
-			org?.id ||
-			'default-workspace';
+		const activeOrgId = (locals.session as { activeOrganizationId?: string } | undefined)
+			?.activeOrganizationId;
+		const workspaceId = activeOrgId || (await getOrCreateDefaultWorkspace(locals.user.id));
 
 		return {
 			authenticated: true,

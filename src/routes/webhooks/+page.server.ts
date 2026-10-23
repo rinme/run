@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { db } from '#lib/server/db/index.ts';
 import { webhooks, user, organization } from '#lib/server/db/schema.ts';
 import { isDiscordWebhookUrl, deliverWebhook } from '#lib/server/webhooks.ts';
+import { getOrCreateDefaultWorkspace } from '#lib/server/api-auth.ts';
 import { eq, desc } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
@@ -23,8 +24,7 @@ export const load: PageServerLoad = async (event) => {
 		};
 	}
 
-	const org = await db.query?.organization?.findFirst?.();
-	const workspaceId = org?.id || 'default-workspace';
+	const workspaceId = await getOrCreateDefaultWorkspace(event.locals.user.id);
 
 	const list = await db
 		.select()
@@ -89,8 +89,7 @@ export const actions: Actions = {
 			});
 		}
 
-		const org = await db.query?.organization?.findFirst?.();
-		const workspaceId = org?.id || 'default-workspace';
+		const workspaceId = await getOrCreateDefaultWorkspace(event.locals.user.id);
 
 		await db.insert(webhooks).values({
 			workspaceId,

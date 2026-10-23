@@ -5,7 +5,7 @@ import { links, type NewLink } from '#lib/server/db/schema.ts';
 import { linkCache } from '#lib/server/cache.ts';
 import { hashPassword } from '#lib/server/security.ts';
 import { dispatchWebhookEvent } from '#lib/server/webhooks.ts';
-import { authenticateApiRequest } from '#lib/server/api-auth.ts';
+import { authenticateApiRequest, getOrCreateDefaultWorkspace } from '#lib/server/api-auth.ts';
 import { RESERVED_PATHS } from '#lib/server/resolver.ts';
 import { eq, desc, and, ne } from 'drizzle-orm';
 
@@ -57,7 +57,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		passwordHash = await hashPassword(data.password);
 	}
 
-	const workspaceId = auth.workspaceId || 'default-workspace';
+	const workspaceId = auth.workspaceId || (await getOrCreateDefaultWorkspace(auth.userId));
 
 	const newLink: NewLink = {
 		workspaceId,

@@ -5,6 +5,7 @@ import { db } from '#lib/server/db/index.ts';
 import { user } from '#lib/server/db/schema.ts';
 import { getSiteSetting, DEFAULT_AUTH_CONFIG, type SiteAuthConfig } from '#lib/server/settings.ts';
 import { validateInviteCode, consumeInviteCode } from '#lib/server/invites.ts';
+import { getOrCreateDefaultWorkspace } from '#lib/server/api-auth.ts';
 import { eq, count } from 'drizzle-orm';
 import { APIError } from 'better-auth/api';
 
@@ -120,6 +121,12 @@ export const actions: Actions = {
 
 			// Persist role in user table
 			await db.update(user).set({ role: grantedRole }).where(eq(user.email, email));
+
+			// Ensure default organization workspace exists and user is linked
+			const [createdUser] = await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1);
+			if (createdUser?.id) {
+				await getOrCreateDefaultWorkspace(createdUser.id);
+			}
 		} catch (error) {
 			if (error instanceof APIError) {
 				return fail(400, { message: error.message || 'Registration failed', mode: 'signup' });

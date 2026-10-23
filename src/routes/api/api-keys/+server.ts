@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '#lib/server/db/index.ts';
 import { apiKeys } from '#lib/server/db/schema.ts';
+import { getOrCreateDefaultWorkspace } from '#lib/server/api-auth.ts';
 import { eq, desc } from 'drizzle-orm';
 
 function hashToken(token: string): string {
@@ -51,8 +52,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		.map((b) => b.toString(16).padStart(2, '0'))
 		.join('');
 
-	const org = await db.query?.organization?.findFirst?.();
-	const workspaceId = org?.id || 'default-workspace';
+	const workspaceId = await getOrCreateDefaultWorkspace(locals.user.id);
 
 	const [created] = await db
 		.insert(apiKeys)

@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { db } from '#lib/server/db/index.ts';
 import { links, apiKeys, type NewLink } from '#lib/server/db/schema.ts';
 import { linkCache } from '#lib/server/cache.ts';
-import { authenticateApiRequest } from '#lib/server/api-auth.ts';
+import { authenticateApiRequest, getOrCreateDefaultWorkspace } from '#lib/server/api-auth.ts';
 import { RESERVED_PATHS } from '#lib/server/resolver.ts';
 import { eq, desc, and } from 'drizzle-orm';
 
@@ -159,8 +159,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					});
 				}
 
-				const org = await db.query?.organization?.findFirst?.();
-				const workspaceId = auth.workspaceId || org?.id || 'default-workspace';
+				const workspaceId = auth.workspaceId || (await getOrCreateDefaultWorkspace(auth.userId));
 
 				const [created] = await db
 					.insert(links)
