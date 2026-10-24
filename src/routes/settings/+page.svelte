@@ -21,7 +21,8 @@
 		Globe,
 		SlidersHorizontal,
 		Play,
-		Wind
+		Wind,
+		Archive
 	} from 'lucide-svelte';
 	import { motion } from 'motion-sv';
 	import { motionSettings, crispSpring } from '#lib/client/motion.svelte.ts';
@@ -795,20 +796,31 @@
 
 	<!-- Database Snapshots & Automated Backups Card -->
 	<div id="backup" class="bg-[#101013] border border-zinc-800/80 rounded-xl p-5 space-y-4">
-		<div class="flex items-center justify-between">
+		<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 			<div>
 				<h3 class="text-xs font-bold text-zinc-200 uppercase tracking-wider font-mono">Database Backups &amp; Snapshots</h3>
 				<p class="text-xs text-zinc-400 mt-0.5">Automated daily cron snapshots via Vercel Cron and Vercel Blob</p>
 			</div>
-			<button
-				type="button"
-				onclick={triggerBackup}
-				disabled={isBackingUp}
-				class="flex items-center gap-1.5 px-4 py-2 bg-zinc-800 hover:bg-zinc-750 text-white text-xs font-semibold rounded-lg border border-zinc-700 shadow-sm transition-all cursor-pointer disabled:opacity-50"
-			>
-				<Download class="w-3.5 h-3.5 {isBackingUp ? 'animate-bounce' : ''}" />
-				<span>{isBackingUp ? 'Creating Snapshot...' : 'Export DB Snapshot'}</span>
-			</button>
+			<div class="flex items-center gap-2">
+				{#if data?.user?.role === 'admin'}
+					<a
+						href="/admin#backup"
+						class="flex items-center gap-1.5 px-3 py-2 bg-purple-950/40 hover:bg-purple-950/60 text-purple-300 text-xs font-semibold rounded-lg border border-purple-800/50 shadow-sm transition-all"
+					>
+						<Archive class="w-3.5 h-3.5 text-purple-400" />
+						<span>Encrypted Admin Backup &rarr;</span>
+					</a>
+				{/if}
+				<button
+					type="button"
+					onclick={triggerBackup}
+					disabled={isBackingUp}
+					class="flex items-center gap-1.5 px-4 py-2 bg-zinc-800 hover:bg-zinc-750 text-white text-xs font-semibold rounded-lg border border-zinc-700 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+				>
+					<Download class="w-3.5 h-3.5 {isBackingUp ? 'animate-bounce' : ''}" />
+					<span>{isBackingUp ? 'Creating Snapshot...' : 'Export DB Snapshot'}</span>
+				</button>
+			</div>
 		</div>
 
 		{#if backupResult}
