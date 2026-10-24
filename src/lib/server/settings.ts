@@ -8,6 +8,7 @@ export interface SiteGeneralConfig {
 	siteUrl: string;
 	defaultDomain: string;
 	defaultDeliveryMode: string;
+	customDomainCnameTarget?: string;
 }
 
 export interface SiteAuthConfig {
@@ -49,7 +50,8 @@ export const DEFAULT_GENERAL_CONFIG: SiteGeneralConfig = {
 				}
 			})()
 		: 'go.run.link',
-	defaultDeliveryMode: 'direct'
+	defaultDeliveryMode: 'direct',
+	customDomainCnameTarget: ''
 };
 
 export const DEFAULT_AUTH_CONFIG: SiteAuthConfig = {

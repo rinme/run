@@ -28,7 +28,8 @@
 	let copiedRecord = $state<string | null>(null);
 
 	const cnameTarget = $derived(
-		`cname.${data.siteConfig?.defaultDomain || (typeof window !== 'undefined' ? window.location.host : 'run.link')}`
+		data.siteConfig?.customDomainCnameTarget?.trim() ||
+			`cname.${data.siteConfig?.defaultDomain || (typeof window !== 'undefined' ? window.location.host : 'run.link')}`
 	);
 
 	$effect.pre(() => {

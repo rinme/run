@@ -119,7 +119,8 @@ export const actions: Actions = {
 			siteTagline: formData.get('siteTagline')?.toString().trim() || '',
 			siteUrl: formData.get('siteUrl')?.toString().trim() || event.url.origin,
 			defaultDomain: formData.get('defaultDomain')?.toString().trim() || event.url.host,
-			defaultDeliveryMode: formData.get('defaultDeliveryMode')?.toString().trim() || 'direct'
+			defaultDeliveryMode: formData.get('defaultDeliveryMode')?.toString().trim() || 'direct',
+			customDomainCnameTarget: formData.get('customDomainCnameTarget')?.toString().trim() || ''
 		};
 
 		await setSiteSetting('general', general);

@@ -350,6 +350,23 @@
 						/>
 					</div>
 
+					<div>
+						<label for="cfgCustomDomainCnameTarget" class="block text-[11px] font-medium text-zinc-400 mb-1">
+							Custom Domain DNS CNAME Target (Optional)
+						</label>
+						<input
+							id="cfgCustomDomainCnameTarget"
+							type="text"
+							name="customDomainCnameTarget"
+							value={data.settings.general.customDomainCnameTarget || ''}
+							placeholder="e.g. fallback.rinme.me, cname.vercel-dns.com, or cname.run.rinme.me"
+							class="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-100 font-mono focus:border-zinc-500 focus:outline-none"
+						/>
+						<p class="text-[10px] text-zinc-500 mt-1">
+							The DNS target host displayed to users when setting up branded custom domains in <a href="/domains" class="text-zinc-300 underline">/domains</a>. Leave empty to default to <span class="font-mono text-zinc-400">cname.{data.settings.general.defaultDomain || 'yourdomain.com'}</span>.
+						</p>
+					</div>
+
 					<button
 						type="submit"
 						class="w-full py-1.5 rounded-md bg-zinc-100 text-zinc-950 text-xs font-semibold hover:bg-zinc-200 transition flex items-center justify-center gap-1.5"
