@@ -17,6 +17,8 @@
 		Filter,
 		Share2
 	} from 'lucide-svelte';
+	import { motion } from 'motion-sv';
+	import { crispSpring } from '#lib/client/motion.svelte.ts';
 	import LinkDrawer from '#lib/components/LinkDrawer.svelte';
 
 	interface PageProps {
@@ -158,32 +160,32 @@
 
 	<!-- KPI Summary Row (taste-skill anti-slop: clean data numbers, no colored icon circles) -->
 	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-		<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
+		<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...crispSpring, delay: 0.05 }} class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
 			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Total Links</div>
 			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">{linkList.length}</div>
 			<div class="text-[11px] text-zinc-400 mt-1">Active in workspace</div>
-		</div>
+		</motion.div>
 
-		<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
+		<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...crispSpring, delay: 0.1 }} class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
 			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Total Clicks Tracked</div>
 			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">{totalClicks.toLocaleString()}</div>
 			<div class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
 				<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
 				<span>Tinybird Ingestion Stream</span>
 			</div>
-		</div>
+		</motion.div>
 
-		<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
+		<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...crispSpring, delay: 0.15 }} class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
 			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">KV Cache Resolution</div>
 			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">&lt; 8ms</div>
 			<div class="text-[11px] text-zinc-400 mt-1">Upstash Redis write-through</div>
-		</div>
+		</motion.div>
 
-		<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
+		<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...crispSpring, delay: 0.2 }} class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
 			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Active Delivery Modes</div>
 			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">6 Modes</div>
 			<div class="text-[11px] text-zinc-400 mt-1">PBKDF2 &bull; Age Gate &bull; Interstitial</div>
-		</div>
+		</motion.div>
 	</div>
 
 	<!-- Search & Filter Controls -->
@@ -252,8 +254,11 @@
 		</div>
 	{:else}
 		<div class="bg-[#101013] border border-zinc-800/90 rounded-xl overflow-hidden divide-y divide-zinc-800/80 shadow-xs">
-			{#each processedLinks as link (link.id)}
-				<div
+			{#each processedLinks as link, index (link.id)}
+				<motion.div
+					initial={{ opacity: 0, y: 6 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.18, delay: Math.min(index * 0.025, 0.25) }}
 					id={link.id}
 					class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-zinc-850/30 transition-colors group"
 				>
@@ -365,7 +370,7 @@
 							</button>
 						</div>
 					</div>
-				</div>
+				</motion.div>
 			{/each}
 		</div>
 	{/if}

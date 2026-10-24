@@ -19,6 +19,8 @@
 		Shield,
 		User
 	} from 'lucide-svelte';
+	import { motion, AnimatePresence } from 'motion-sv';
+	import { crispSpring } from '#lib/client/motion.svelte.ts';
 
 	interface CommandProps {
 		isOpen: boolean;
@@ -81,77 +83,89 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#if isOpen}
-	<div
-		class="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-150"
-		onclick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-		role="presentation"
-	>
-		<div class="bg-[#121215] border border-zinc-800 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
-			<!-- Input Header -->
-			<div class="flex items-center px-4 py-3 border-b border-zinc-800 gap-3">
-				<Search class="w-4 h-4 text-zinc-500 shrink-0" />
-				<input
-					bind:this={inputRef}
-					bind:value={query}
-					placeholder="Type a command, route, or link slug..."
-					class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none"
-				/>
-				<kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-zinc-900 text-zinc-400 rounded border border-zinc-800">ESC</kbd>
-			</div>
+<AnimatePresence>
+	{#if isOpen}
+		<motion.div
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			exit={{ opacity: 0 }}
+			transition={{ duration: 0.15 }}
+			class="fixed inset-0 z-50 flex items-start justify-center pt-20 p-4 bg-black/75 backdrop-blur-xs"
+			onclick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+			role="presentation"
+		>
+			<motion.div
+				initial={{ opacity: 0, scale: 0.96, y: -12 }}
+				animate={{ opacity: 1, scale: 1, y: 0 }}
+				exit={{ opacity: 0, scale: 0.96, y: -12 }}
+				transition={crispSpring}
+				class="bg-[#121215] border border-zinc-800 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col"
+			>
+				<!-- Input Header -->
+				<div class="flex items-center px-4 py-3 border-b border-zinc-800 gap-3">
+					<Search class="w-4 h-4 text-zinc-500 shrink-0" />
+					<input
+						bind:this={inputRef}
+						bind:value={query}
+						placeholder="Type a command, route, or link slug..."
+						class="w-full bg-transparent text-sm text-zinc-100 placeholder-zinc-500 outline-none"
+					/>
+					<kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-zinc-900 text-zinc-400 rounded border border-zinc-800">ESC</kbd>
+				</div>
 
-			<!-- Results Body -->
-			<div class="max-h-80 overflow-y-auto p-2 space-y-1">
-				{#if filteredLinkItems.length > 0}
-					<div class="px-2 py-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-zinc-500">
-						Links ({filteredLinkItems.length})
-					</div>
-					{#each filteredLinkItems as link}
-						<button
-							type="button"
-							onclick={() => { onClose(); goto(`/#${link.id}`); }}
-							class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-zinc-800/80 transition-colors text-left group cursor-pointer"
-						>
-							<div class="flex items-center gap-2.5 min-w-0">
-								<span class="font-mono text-blue-400 font-semibold shrink-0">/{link.slug}</span>
-								<span class="text-zinc-400 truncate text-[11px] font-mono">{link.destinationUrl}</span>
-							</div>
-							<ArrowRight class="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-300 transition-colors shrink-0" />
-						</button>
-					{/each}
-				{/if}
+				<!-- Results Body -->
+				<div class="max-h-80 overflow-y-auto p-2 space-y-1">
+					{#if filteredLinkItems.length > 0}
+						<div class="px-2 py-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-zinc-500">
+							Links ({filteredLinkItems.length})
+						</div>
+						{#each filteredLinkItems as link}
+							<button
+								type="button"
+								onclick={() => { onClose(); goto(`/#${link.id}`); }}
+								class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-zinc-800/80 transition-colors text-left group cursor-pointer"
+							>
+								<div class="flex items-center gap-2.5 min-w-0">
+									<span class="font-mono text-blue-400 font-semibold shrink-0">/{link.slug}</span>
+									<span class="text-zinc-400 truncate text-[11px] font-mono">{link.destinationUrl}</span>
+								</div>
+								<ArrowRight class="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-300 transition-colors shrink-0" />
+							</button>
+						{/each}
+					{/if}
 
-				{#if filteredActions.length > 0}
-					<div class="px-2 py-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-zinc-500">
-						Commands
-					</div>
-					{#each filteredActions as action}
-						<button
-							type="button"
-							onclick={action.action}
-							class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-zinc-800/80 transition-colors text-left group cursor-pointer"
-						>
-							<div class="flex items-center gap-2.5">
-								<action.icon class="w-4 h-4 text-zinc-500 group-hover:text-blue-400 transition-colors" />
-								<span class="text-zinc-200 group-hover:text-white font-medium">{action.title}</span>
-							</div>
-							<span class="text-[10px] text-zinc-500 font-mono">{action.category}</span>
-						</button>
-					{/each}
-				{/if}
+					{#if filteredActions.length > 0}
+						<div class="px-2 py-1 text-[10px] font-mono font-semibold uppercase tracking-wider text-zinc-500">
+							Commands
+						</div>
+						{#each filteredActions as action}
+							<button
+								type="button"
+								onclick={action.action}
+								class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs hover:bg-zinc-800/80 transition-colors text-left group cursor-pointer"
+							>
+								<div class="flex items-center gap-2.5">
+									<action.icon class="w-4 h-4 text-zinc-500 group-hover:text-blue-400 transition-colors" />
+									<span class="text-zinc-200 group-hover:text-white font-medium">{action.title}</span>
+								</div>
+								<span class="text-[10px] text-zinc-500 font-mono">{action.category}</span>
+							</button>
+						{/each}
+					{/if}
 
-				{#if filteredActions.length === 0 && filteredLinkItems.length === 0}
-					<div class="p-8 text-center text-xs text-zinc-500">
-						No commands or links found matching "<span class="text-zinc-300">{query}</span>"
-					</div>
-				{/if}
-			</div>
+					{#if filteredActions.length === 0 && filteredLinkItems.length === 0}
+						<div class="p-8 text-center text-xs text-zinc-500">
+							No commands or links found matching "<span class="text-zinc-300">{query}</span>"
+						</div>
+					{/if}
+				</div>
 
-			<!-- Footer Tip -->
-			<div class="px-4 py-2 border-t border-zinc-800/80 bg-zinc-950/60 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
-				<span>Navigation &amp; Actions</span>
-				<span>Press ESC to exit</span>
-			</div>
-		</div>
-	</div>
-{/if}
+				<!-- Footer Tip -->
+				<div class="px-4 py-2 border-t border-zinc-800/80 bg-zinc-950/60 flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+					<span>Navigation &amp; Actions</span>
+					<span>Press ESC to exit</span>
+				</div>
+			</motion.div>
+		</motion.div>
+	{/if}
+</AnimatePresence>

@@ -12,6 +12,8 @@
 		Check,
 		AlertCircle
 	} from 'lucide-svelte';
+	import { motion, AnimatePresence } from 'motion-sv';
+	import { crispSpring } from '#lib/client/motion.svelte.ts';
 
 	interface DrawerProps {
 		isOpen?: boolean;
@@ -261,13 +263,24 @@
 	}
 </script>
 
-{#if isOpen}
-	<div
-		class="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
-		onclick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-		role="presentation"
-	>
-		<div class="bg-[#101014] border-l border-zinc-800 w-full max-w-xl h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
+<AnimatePresence>
+	{#if isOpen}
+		<motion.div
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			exit={{ opacity: 0 }}
+			transition={{ duration: 0.18 }}
+			class="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs"
+			onclick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+			role="presentation"
+		>
+			<motion.div
+				initial={{ x: '100%' }}
+				animate={{ x: 0 }}
+				exit={{ x: '100%' }}
+				transition={crispSpring}
+				class="bg-[#101014] border-l border-zinc-800 w-full max-w-xl h-full flex flex-col shadow-2xl"
+			>
 			<!-- Drawer Header -->
 			<div class="px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
 				<div>
@@ -714,6 +727,7 @@
 					</button>
 				</div>
 			</form>
-		</div>
-	</div>
+		</motion.div>
+	</motion.div>
 {/if}
+</AnimatePresence>

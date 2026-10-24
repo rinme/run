@@ -12,6 +12,8 @@
 		Check,
 		AlertCircle
 	} from 'lucide-svelte';
+	import { motion, AnimatePresence } from 'motion-sv';
+	import { crispSpring } from '#lib/client/motion.svelte.ts';
 
 	interface ModalProps {
 		isOpen?: boolean;
@@ -176,9 +178,22 @@
 	}
 </script>
 
-{#if isOpen}
-	<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-		<div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+<AnimatePresence>
+	{#if isOpen}
+		<motion.div
+			initial={{ opacity: 0 }}
+			animate={{ opacity: 1 }}
+			exit={{ opacity: 0 }}
+			transition={{ duration: 0.18 }}
+			class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
+		>
+			<motion.div
+				initial={{ opacity: 0, scale: 0.95, y: -10 }}
+				animate={{ opacity: 1, scale: 1, y: 0 }}
+				exit={{ opacity: 0, scale: 0.95, y: -10 }}
+				transition={crispSpring}
+				class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+			>
 			<!-- Header -->
 			<div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
 				<div>
@@ -616,6 +631,7 @@
 					</button>
 				</div>
 			</form>
-		</div>
-	</div>
+		</motion.div>
+	</motion.div>
 {/if}
+</AnimatePresence>

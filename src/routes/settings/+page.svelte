@@ -19,10 +19,17 @@
 		XCircle,
 		RefreshCw,
 		Globe,
-		SlidersHorizontal
+		SlidersHorizontal,
+		Play,
+		Wind
 	} from 'lucide-svelte';
+	import { motion } from 'motion-sv';
+	import { motionSettings, crispSpring } from '#lib/client/motion.svelte.ts';
 
 	let { data }: { data: PageData } = $props();
+
+	// --- Interactive Motion Preview State ---
+	let previewTrigger = $state(0);
 
 	// --- Database Snapshot Backup State ---
 	let isBackingUp = $state(false);
@@ -683,6 +690,105 @@
 				<span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
 					v2.5 Flash
 				</span>
+			</div>
+		</div>
+	</div>
+
+	<!-- Motion & Accessibility Preferences Card -->
+	<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-5 space-y-4">
+		<div class="flex items-center justify-between">
+			<div class="flex items-center gap-2">
+				<div class="p-2 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-400">
+					<Wind class="w-4 h-4" />
+				</div>
+				<div>
+					<h3 class="text-xs font-bold text-zinc-200 uppercase tracking-wider font-mono">Motion &amp; Animation Accessibility</h3>
+					<p class="text-[11px] text-zinc-400">Powered by motion-svelte &bull; Configure spring physics and reduced motion accessibility</p>
+				</div>
+			</div>
+			<span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+				{motionSettings.mode === 'user' ? 'System Mode' : motionSettings.mode === 'always' ? 'Reduced Motion' : 'Full Motion'}
+			</span>
+		</div>
+
+		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-1">
+			<!-- Option Selector (2 cols on desktop) -->
+			<div class="lg:col-span-2 space-y-3">
+				<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+					<button
+						type="button"
+						onclick={() => motionSettings.setMode('user')}
+						class="p-3 rounded-lg border text-left transition-all cursor-pointer {motionSettings.mode === 'user'
+							? 'bg-purple-600/10 border-purple-500/40 text-purple-200 shadow-xs'
+							: 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'}"
+					>
+						<span class="block text-xs font-semibold font-mono">System Default</span>
+						<span class="block text-[11px] text-zinc-500 mt-1">Detects OS "prefers-reduced-motion" setting automatically.</span>
+					</button>
+
+					<button
+						type="button"
+						onclick={() => motionSettings.setMode('always')}
+						class="p-3 rounded-lg border text-left transition-all cursor-pointer {motionSettings.mode === 'always'
+							? 'bg-amber-600/10 border-amber-500/40 text-amber-200 shadow-xs'
+							: 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'}"
+					>
+						<span class="block text-xs font-semibold font-mono">Always Reduced</span>
+						<span class="block text-[11px] text-zinc-500 mt-1">Disables spatial movement &amp; scaling. Uses subtle gentle fades.</span>
+					</button>
+
+					<button
+						type="button"
+						onclick={() => motionSettings.setMode('never')}
+						class="p-3 rounded-lg border text-left transition-all cursor-pointer {motionSettings.mode === 'never'
+							? 'bg-emerald-600/10 border-emerald-500/40 text-emerald-200 shadow-xs'
+							: 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'}"
+					>
+						<span class="block text-xs font-semibold font-mono">Full Motion</span>
+						<span class="block text-[11px] text-zinc-500 mt-1">Enables crisp Framer-style spring physics (stiffness 300, damping 25).</span>
+					</button>
+				</div>
+
+				<div class="p-3 bg-zinc-950 border border-zinc-800/80 rounded-lg text-[11px] text-zinc-400 flex items-center justify-between font-mono">
+					<span>Active engine: motion-sv (Svelte 5)</span>
+					<span class="text-zinc-500">Persisted locally in browser storage</span>
+				</div>
+			</div>
+
+			<!-- Live Animation Preview Sandbox (1 col on desktop) -->
+			<div class="bg-zinc-950 border border-zinc-800/80 rounded-lg p-4 flex flex-col justify-between space-y-3">
+				<div>
+					<div class="flex items-center justify-between">
+						<span class="text-[11px] font-mono text-zinc-400 font-semibold uppercase">Interactive Preview</span>
+						<button
+							type="button"
+							onclick={() => previewTrigger++}
+							class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-750 text-zinc-200 border border-zinc-700 cursor-pointer flex items-center gap-1"
+						>
+							<Play class="w-2.5 h-2.5 text-blue-400" />
+							<span>Re-run</span>
+						</button>
+					</div>
+
+					<!-- Animated Demo Box -->
+					<div class="h-24 flex items-center justify-center mt-2 overflow-hidden bg-zinc-900/50 rounded-lg border border-zinc-800/50">
+						{#key previewTrigger}
+							<motion.div
+								initial={{ opacity: 0, scale: 0.85, y: 15 }}
+								animate={{ opacity: 1, scale: 1, y: 0 }}
+								transition={crispSpring}
+								class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg text-white font-mono text-xs font-bold shadow-lg flex items-center gap-2"
+							>
+								<Sparkles class="w-3.5 h-3.5" />
+								<span>Sample Link Card</span>
+							</motion.div>
+						{/key}
+					</div>
+				</div>
+
+				<p class="text-[10px] text-zinc-500 font-mono text-center">
+					Click Re-run to preview this mode's physics in real time.
+				</p>
 			</div>
 		</div>
 	</div>

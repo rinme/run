@@ -6,6 +6,8 @@
 	import CommandPalette from '#lib/components/CommandPalette.svelte';
 	import LinkDrawer from '#lib/components/LinkDrawer.svelte';
 	import { page } from '$app/state';
+	import { MotionConfig } from 'motion-sv';
+	import { motionSettings } from '#lib/client/motion.svelte.ts';
 
 	let { data, children }: LayoutProps = $props();
 
@@ -47,35 +49,37 @@
 	<title>Run — High-Performance Edge Link Platform</title>
 </svelte:head>
 
-{#if !data.user || isCustomShellPage}
-	<!-- Standalone Auth, Public & Dedicated Mobile Layout (No Desktop Sidebar) -->
-	<main class="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col font-sans selection:bg-blue-600/30">
-		{@render children()}
-	</main>
-{:else}
-	<!-- Authenticated Dashboard Layout (With Sidebar & Modals) -->
-	<div class="min-h-screen bg-[#09090b] text-zinc-100 flex font-sans selection:bg-blue-600/30">
-		<!-- App Sidebar -->
-		<AppSidebar onOpenCommandPalette={() => (isCommandPaletteOpen = true)} />
-
-		<!-- Main Workspace Area -->
-		<div class="flex-1 flex flex-col min-w-0 overflow-y-auto min-h-screen">
+<MotionConfig reducedMotion={motionSettings.mode}>
+	{#if !data.user || isCustomShellPage}
+		<!-- Standalone Auth, Public & Dedicated Mobile Layout (No Desktop Sidebar) -->
+		<main class="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col font-sans selection:bg-blue-600/30">
 			{@render children()}
+		</main>
+	{:else}
+		<!-- Authenticated Dashboard Layout (With Sidebar & Modals) -->
+		<div class="min-h-screen bg-[#09090b] text-zinc-100 flex font-sans selection:bg-blue-600/30">
+			<!-- App Sidebar -->
+			<AppSidebar onOpenCommandPalette={() => (isCommandPaletteOpen = true)} />
+
+			<!-- Main Workspace Area -->
+			<div class="flex-1 flex flex-col min-w-0 overflow-y-auto min-h-screen">
+				{@render children()}
+			</div>
+
+			<!-- Global Command Palette (Cmd+K) -->
+			<CommandPalette
+				isOpen={isCommandPaletteOpen}
+				onClose={() => (isCommandPaletteOpen = false)}
+				onCreateLink={openCreateLink}
+			/>
+
+			<!-- Global Link Drawer (Slide-over for Create & Edit) -->
+			<LinkDrawer
+				isOpen={isLinkDrawerOpen}
+				onClose={() => (isLinkDrawerOpen = false)}
+				linkToEdit={linkToEdit}
+				onSaved={handleSavedLink}
+			/>
 		</div>
-
-		<!-- Global Command Palette (Cmd+K) -->
-		<CommandPalette
-			isOpen={isCommandPaletteOpen}
-			onClose={() => (isCommandPaletteOpen = false)}
-			onCreateLink={openCreateLink}
-		/>
-
-		<!-- Global Link Drawer (Slide-over for Create & Edit) -->
-		<LinkDrawer
-			isOpen={isLinkDrawerOpen}
-			onClose={() => (isLinkDrawerOpen = false)}
-			linkToEdit={linkToEdit}
-			onSaved={handleSavedLink}
-		/>
-	</div>
-{/if}
+	{/if}
+</MotionConfig>
