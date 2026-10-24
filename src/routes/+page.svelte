@@ -20,6 +20,7 @@
 	import { motion } from 'motion-sv';
 	import { crispSpring } from '#lib/client/motion.svelte.ts';
 	import LinkDrawer from '#lib/components/LinkDrawer.svelte';
+	import LinkSkeleton from '#lib/components/LinkSkeleton.svelte';
 
 	interface PageProps {
 		data: PageData;
@@ -36,6 +37,7 @@
 	let isDrawerOpen = $state(false);
 	let activeEditLink = $state<any | null>(null);
 	let copiedId = $state<string | null>(null);
+	let isRefreshing = $state(false);
 
 	$effect.pre(() => {
 		linkList = [...(data.links || [])];
@@ -44,10 +46,15 @@
 	// Listen for global links update event
 	$effect(() => {
 		const handleUpdate = async () => {
-			const res = await fetch('/api/links');
-			if (res.ok) {
-				const fresh = await res.json();
-				linkList = fresh;
+			isRefreshing = true;
+			try {
+				const res = await fetch('/api/links');
+				if (res.ok) {
+					const fresh = await res.json();
+					linkList = fresh;
+				}
+			} finally {
+				isRefreshing = false;
 			}
 		};
 		window.addEventListener('run:links-updated', handleUpdate);
@@ -234,7 +241,9 @@
 	</div>
 
 	<!-- Links Data Table -->
-	{#if processedLinks.length === 0}
+	{#if isRefreshing}
+		<LinkSkeleton rows={Math.min(linkList.length || 5, 8)} />
+	{:else if processedLinks.length === 0}
 		<div class="text-center py-20 bg-[#101013] border border-zinc-800 rounded-xl p-8">
 			<div class="w-10 h-10 rounded-full bg-zinc-850 flex items-center justify-center mx-auto mb-3 text-zinc-500">
 				<Link2 class="w-5 h-5" />
