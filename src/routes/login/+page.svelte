@@ -20,7 +20,7 @@
 </script>
 
 <svelte:head>
-	<title>{activeTab === 'signin' ? 'Sign In' : 'Join Run'} — Run Link Engine</title>
+	<title>{activeTab === 'signin' ? 'Sign In' : 'Join Run'} — Run</title>
 </svelte:head>
 
 <div class="min-h-[80vh] flex items-center justify-center py-12 px-4 sm:px-6">
@@ -173,31 +173,56 @@
 								</p>
 							</div>
 						{:else if data.registrationMode === 'invite_only'}
-							<div class="p-3 rounded-lg border border-amber-500/20 bg-amber-950/20">
-								<div class="flex items-center justify-between mb-1.5">
-									<label for="signup-invite" class="text-xs font-medium text-amber-300 flex items-center gap-1.5">
-										<Ticket class="w-3.5 h-3.5" />
-										Invite Code (Required)
-									</label>
-									{#if data.inviteDetails}
-										<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300">
-											VIP Verified
+							{#if data.initialInviteCode}
+								<div class="p-3 rounded-lg border border-amber-500/30 bg-amber-950/20 space-y-1.5">
+									<div class="flex items-center justify-between mb-1">
+										<label for="signup-invite" class="text-xs font-semibold text-amber-300 flex items-center gap-1.5">
+											<Lock class="w-3.5 h-3.5 text-amber-400" />
+											Invite Code (Locked)
+										</label>
+										<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 font-semibold border border-amber-500/30 flex items-center gap-1">
+											<ShieldCheck class="w-3 h-3 text-emerald-400" />
+											Locked by invitation link
 										</span>
-									{/if}
+									</div>
+									<div class="relative">
+										<input
+											id="signup-invite"
+											type="text"
+											name="inviteCode"
+											value={data.initialInviteCode}
+											readonly
+											tabindex="-1"
+											class="w-full uppercase rounded-md border border-amber-500/40 bg-zinc-900/80 px-3 py-1.5 pr-8 text-xs text-amber-200 font-mono tracking-wider cursor-not-allowed select-none opacity-90 font-bold focus:outline-none"
+										/>
+										<Lock class="w-3.5 h-3.5 text-amber-500/70 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+									</div>
+									<p class="text-[10px] text-amber-200/70">
+										This code was authorized via your secure email invitation link and cannot be changed.
+									</p>
 								</div>
-								<input
-									id="signup-invite"
-									type="text"
-									name="inviteCode"
-									bind:value={inviteCodeInput}
-									required
-									placeholder="RUN-VIP-XXXXX"
-									class="w-full uppercase rounded-md border border-amber-500/30 bg-zinc-950 px-3 py-1.5 text-xs text-amber-200 placeholder:text-zinc-600 focus:border-amber-400 focus:outline-none font-mono tracking-wider transition"
-								/>
-								<p class="text-[10px] text-zinc-400 mt-1.5">
-									Enter the code received via email or given by an admin to unlock registration.
-								</p>
-							</div>
+							{:else}
+								<div class="p-3 rounded-lg border border-amber-500/20 bg-amber-950/20">
+									<div class="flex items-center justify-between mb-1.5">
+										<label for="signup-invite" class="text-xs font-medium text-amber-300 flex items-center gap-1.5">
+											<Ticket class="w-3.5 h-3.5" />
+											Invite Code (Required)
+										</label>
+									</div>
+									<input
+										id="signup-invite"
+										type="text"
+										name="inviteCode"
+										bind:value={inviteCodeInput}
+										required
+										placeholder="RUN-VIP-XXXXX"
+										class="w-full uppercase rounded-md border border-amber-500/30 bg-zinc-950 px-3 py-1.5 text-xs text-amber-200 placeholder:text-zinc-600 focus:border-amber-400 focus:outline-none font-mono tracking-wider transition"
+									/>
+									<p class="text-[10px] text-zinc-400 mt-1.5">
+										Enter the code received via email or given by an admin to unlock registration.
+									</p>
+								</div>
+							{/if}
 						{/if}
 
 						<div>
