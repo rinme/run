@@ -8,7 +8,7 @@ let tinybirdApiUrl = (process.env.TINYBIRD_API_URL || process.env.TINYBIRD_URL |
 let tinybirdToken = (process.env.TINYBIRD_TOKEN || '').trim();
 
 try {
-	const privateEnv = (await import('$app/env/private')) as Record<string, string | undefined>;
+	const privateEnv = (await import('$app/env/private')) as unknown as Record<string, string | undefined>;
 	if (privateEnv.TINYBIRD_API_URL || privateEnv.TINYBIRD_URL) {
 		tinybirdApiUrl = (privateEnv.TINYBIRD_API_URL || privateEnv.TINYBIRD_URL || '').replace(/\/+$/, '');
 	}

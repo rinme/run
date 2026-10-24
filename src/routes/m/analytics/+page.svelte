@@ -20,11 +20,11 @@
 	let copiedId = $state<string | null>(null);
 
 	const avgClicksPerLink = $derived(
-		data.totalLinks > 0 ? (data.totalClicks / data.totalLinks).toFixed(1) : '0'
+		(data?.totalLinks ?? 0) > 0 ? ((data?.totalClicks ?? 0) / data.totalLinks).toFixed(1) : '0'
 	);
 
 	const maxClicks = $derived(
-		Math.max(1, ...(data.topLinks.map((l) => l.currentClicks || 0)))
+		Math.max(1, ...((data?.topLinks ?? []).map((l) => l.currentClicks || 0)))
 	);
 
 	async function copyLink(slug: string, id: string) {
@@ -66,7 +66,7 @@
 	<div class="grid grid-cols-3 gap-2">
 		<div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-3 flex flex-col justify-between">
 			<div class="text-[10px] uppercase font-mono tracking-wider text-zinc-400 font-medium">Clicks</div>
-			<div class="text-xl font-bold text-zinc-100 font-mono mt-1">{data.totalClicks.toLocaleString()}</div>
+			<div class="text-xl font-bold text-zinc-100 font-mono mt-1">{(data?.totalClicks ?? 0).toLocaleString()}</div>
 			<div class="text-[9px] text-emerald-400 font-medium flex items-center gap-1 mt-1">
 				<TrendingUp class="w-2.5 h-2.5" />
 				<span>Live</span>
@@ -75,7 +75,7 @@
 
 		<div class="bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-3 flex flex-col justify-between">
 			<div class="text-[10px] uppercase font-mono tracking-wider text-zinc-400 font-medium">Links</div>
-			<div class="text-xl font-bold text-zinc-100 font-mono mt-1">{data.totalLinks}</div>
+			<div class="text-xl font-bold text-zinc-100 font-mono mt-1">{data?.totalLinks ?? 0}</div>
 			<div class="text-[9px] text-zinc-400 font-medium mt-1">Total created</div>
 		</div>
 
@@ -95,7 +95,7 @@
 			<span class="text-[10px] text-zinc-400 font-mono">Ranked by hits</span>
 		</div>
 
-		{#if data.topLinks.length === 0}
+		{#if !data?.topLinks || data.topLinks.length === 0}
 			<div class="text-center py-6 text-xs text-zinc-400">
 				No click data recorded yet.
 			</div>

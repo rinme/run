@@ -19,7 +19,9 @@ export interface LiveClickItem {
 export class LiveQueueManager {
 	// Svelte 5 reactive runes
 	events = $state<LiveClickItem[]>([]);
-	activeCount = $derived(this.events.length);
+	get activeCount(): number {
+		return this.events.length;
+	}
 	isStreaming = $state(false);
 
 	private buffer: LiveClickItem[] = [];

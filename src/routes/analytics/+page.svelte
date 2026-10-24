@@ -21,12 +21,14 @@
 
 	let timeRange = $state<'24h' | '7d' | '30d' | 'all'>('7d');
 
-	// Real-time Live Queue
-	const liveQueue = new LiveQueueManager(25);
+	// Real-time Live Queue (client-only)
+	let liveQueue = $state<LiveQueueManager | null>(null);
 
 	$effect(() => {
-		liveQueue.start();
-		return () => liveQueue.stop();
+		const queue = new LiveQueueManager(25);
+		queue.start();
+		liveQueue = queue;
+		return () => queue.stop();
 	});
 
 	// Timeseries synthetic data for SVG chart
@@ -90,7 +92,7 @@
 		<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
 			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Total Period Clicks</div>
 			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">
-				{data.totalClicks.toLocaleString()}
+				{(data?.totalClicks ?? 0).toLocaleString()}
 			</div>
 			<div class="text-[11px] text-emerald-400 mt-1">+18.4% vs last period</div>
 		</div>
@@ -156,11 +158,11 @@
 					<Radio class="w-4 h-4 text-emerald-400 animate-pulse" />
 					<h3 class="text-xs font-bold tracking-wide uppercase text-zinc-200 font-mono">Live Traffic Stream</h3>
 				</div>
-				<span class="text-[10px] font-mono text-zinc-500">{liveQueue.activeCount} buffered</span>
+				<span class="text-[10px] font-mono text-zinc-500">{liveQueue?.activeCount ?? 0} buffered</span>
 			</div>
 
 			<div class="flex-1 overflow-y-auto space-y-2 pr-1">
-				{#if liveQueue.events.length === 0}
+				{#if !liveQueue || liveQueue.events.length === 0}
 					<div class="text-center py-24 text-xs text-zinc-500 font-mono">
 						Streaming incoming click events...
 					</div>

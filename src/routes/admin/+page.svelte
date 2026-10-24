@@ -1143,10 +1143,11 @@
 									</div>
 									<div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[11px] text-zinc-300">
 										{#each Object.entries(restoreResult.stats || {}) as [tbl, s]}
+											{@const stat = s as { inserted?: number; updated?: number; skipped?: number }}
 											<div class="p-1.5 bg-zinc-950/60 rounded border border-zinc-800">
 												<span class="text-zinc-400 block uppercase text-[9px] font-semibold">{tbl}</span>
-												<span class="text-emerald-400">+{s.inserted} new</span>
-												<span class="text-blue-400 ml-1">~{s.updated} upd</span>
+												<span class="text-emerald-400">+{stat.inserted || 0} new</span>
+												<span class="text-blue-400 ml-1">~{stat.updated || 0} upd</span>
 											</div>
 										{/each}
 									</div>

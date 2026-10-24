@@ -32,7 +32,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const rawPayload = body.payload ?? body;
 
 	// Determine format
-	let requestedFormat: DetectedFormat = body.format || 'auto';
+	let requestedFormat: DetectedFormat | 'auto' = body.format || 'auto';
 	if (requestedFormat === 'auto') {
 		requestedFormat = detectFormat(rawPayload);
 	}

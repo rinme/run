@@ -392,7 +392,7 @@ export async function restoreDatasets(
 					await db.insert(links).values({
 						id: l.id || crypto.randomUUID(),
 						...linkData,
-						clicks: typeof l.clicks === 'number' ? l.clicks : 0,
+						currentClicks: typeof l.clicks === 'number' ? l.clicks : (typeof l.currentClicks === 'number' ? l.currentClicks : 0),
 						createdAt: toDate(l.createdAt) || new Date()
 					});
 					result.stats.links.inserted++;
