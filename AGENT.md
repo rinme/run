@@ -4,15 +4,33 @@ For the complete architectural documentation, MCP schemas, REST API specs, and d
 
 ---
 
+## ⚡ Core Operational Principles
+
+1. **Tooling & Package Manager (MANDATORY)**:
+   - **Always use `bun`** for package installation (`bun install`), script execution (`bun run`), test running (`bun test`), and binary execution (`bunx`).
+   - Never invoke `npm`, `npx`, or `node` directly.
+
+2. **Multi-Tenant Privacy & Workspace Scoping (CRITICAL)**:
+   - Every user belongs to their own private **Personal Workspace** by default.
+   - **Never query global `links`, `clicks`, or `domains` without workspace scoping.**
+   - All server routes and API endpoints must filter records by `where(and(eq(table.workspaceId, activeWorkspaceId), ...))`.
+   - Never expose other users' links or analytics.
+
+3. **Production Tone & UI Standard**:
+   - Maintain a clean, professional, enterprise-grade production tone across all pages.
+   - Avoid marketing fluff, showcase slogans, or generic AI placeholders.
+
+---
+
 ## Autonomous Release Protocol
 
 Autonomous AI agents working on **Run** must adhere to the following release automation directives:
 
 ### 1. Automatic Release Creation
 Create a new GitHub release automatically when:
-1. **Commit Magnitude**: The commit or session represents a **large or significant update** (e.g., major feature additions such as dedicated `/m/` mobile layout, new delivery modes, architectural refactors, or critical security patches).
+1. **Commit Magnitude**: The commit or session represents a **large or significant update** (e.g., multi-tenant workspace isolation, encrypted backup/restore, new delivery modes, architectural refactors, or critical security patches).
 2. **Confidence & Verification**: You are **fully confident** that the feature or patch is working:
-   - `bun run check` passes with **0 errors and 0 warnings**.
+   - `bun test` passes with **all tests passing**.
    - Edge runtime safety is preserved (no unsupported Node globals in edge resolver paths).
    - Live database compatibility verified.
 
@@ -29,7 +47,7 @@ Create a new GitHub release automatically when:
 If an issue or bug is discovered after a release is published:
 - **Never leave a broken release live as latest.**
 - If unverified or broken, redo the release:
-  1. Fix the bug and verify via `bun run check`.
+  1. Fix the bug and verify via `bun test`.
   2. Delete broken release and tag:
      ```bash
      gh release delete <tag> -y

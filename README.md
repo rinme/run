@@ -1,47 +1,64 @@
 # Run ⚡
 
-**Run** is a high-performance, edge-first link management, delivery security, and analytics platform built on **SvelteKit 2 (Svelte 5 Runes)**, **Vercel Edge**, **Turso (LibSQL/SQLite)**, **Upstash Redis (Vercel KV)**, and **Tinybird**.
+**Run** is a production-grade, edge-first link management, delivery security, multi-tenant workspace, and real-time analytics platform built with **SvelteKit 2 (Svelte 5 Runes)**, **Vercel Edge**, **Turso (LibSQL/SQLite)**, **Upstash Redis (Vercel KV)**, and **Tinybird**.
 
 ---
 
 ## 🚀 Key Features & Capabilities
 
-- **Ultra-Fast Edge Resolution (<10ms)**:
-  - Multi-tier caching: **Upstash Redis / Vercel KV** with write-through back into **Turso (LibSQL)**.
-  - Edge routing middleware running natively on Vercel Edge.
-- **6 Secure Delivery Modes**:
-  1. **Direct Redirect**: Instant 301/302 edge redirect with query parameter forwarding.
-  2. **Password Protection**: Web Crypto PBKDF2 (100,000 iterations) challenge gate.
-  3. **NSFW Age Verification**: Cryptographic HMAC-SHA256 18+ birth confirmation gate.
-  4. **Interstitial Countdown**: Branded countdown timer with `<meta http-equiv="refresh">` fallback.
-  5. **Link Cloaking**: Responsive full-viewport iframe cloaking preserving the short domain.
-  6. **Clean Reverse Proxy**: Full hop-by-hop header scrubbing with client IP preservation.
-- **VIP Invite-Only Access & Session Management**:
-  - Dual registration mode: VIP invite codes (`RUN-VIP-XXXXX`) or direct email invitations.
-  - Role-based access control: `admin`, `trusted`, `member`.
-  - First registered user automatically elevated to **Super Administrator**.
-  - Cross-user active bearer session inspection and 1-click revocation.
-- **Admin System Control Dashboard (`/admin`)**:
-  - Live configuration of website metadata, registration policies, feature flags, and email transport (SMTP, Resend, Console).
-  - Global session termination and invite key management.
-- **Outgoing Webhooks & Discord Embed Engine (`/webhooks`)**:
-  - Real-time telemetry dispatch for `link.clicked`, `link.created`, and `security.blocked`.
-  - Automatic Discord webhook detection with customizable bot username, avatar, and embed accent color.
-  - HMAC-SHA256 signature verification (`X-Run-Signature`) for standard HTTP webhooks.
-- **Dynamic Routing & Device Redirection**:
-  - **Device Targeting**: Automatically redirect iOS users to the Apple App Store and Android users to Google Play via `ua-parser-js`.
-  - **Geo-Targeting**: Country-specific destinations based on `x-vercel-ip-country`.
-  - **A/B Split Testing**: Weighted traffic percentage splits across multiple destination variants.
-- **Real-Time Analytics & 3D WebGL Globe**:
-  - Interactive **3D WebGL Globe** built with Three.js rendering live geo-traffic pins.
-  - Exponential backoff and tab visibility checks for telemetry streams.
-- **QR Code Studio (`/qr`)**:
-  - Vector SVG and PNG export with customizable dot patterns, corner squares, colors, and embedded logos.
-- **Dynamic Changelog (`/changelog`)**:
-  - Real-time release synchronization pulling directly from GitHub releases with intelligent 15-minute caching.
-- **Native MCP Server (`/api/mcp`) & AI Agents**:
-  - Official Model Context Protocol tools (`create_link`, `edit_link`, `list_links`, `check_links`, `get_analytics_views`) for Cursor, Claude Desktop, Antigravity, and autonomous workflows.
-  - Full AI Agent handbook available in [`AGENT_GUIDE.md`](./AGENT_GUIDE.md).
+### 1. Multi-Tenant Workspaces & Complete Link Isolation
+- **Personal Workspaces by Default**: Every registered user automatically receives a private **Personal Workspace**. Links, clicks, custom domains, and analytics are strictly isolated—users never see or access another user's links.
+- **Collaborative Team Workspaces**: Users with `trusted` or `admin` roles can create shared Team Workspaces for organizations and departments.
+- **Tamper-Proof Workspace Invitations**:
+  - Direct email dispatch via Resend/SMTP/Console.
+  - Signed, tamper-proof 7-day shareable join links (`/workspace/join?token=...`).
+  - Interactive acceptance flow at `/workspace/join`.
+- **Interactive Workspace Switcher**: Seamlessly switch between personal and team workspaces on desktop (`AppSidebar.svelte`) and mobile (`/m`).
+
+### 2. High-Performance Edge Resolution (<10ms)
+- Multi-tier edge caching: **Upstash Redis / Vercel KV** with write-through consistency to **Turso (LibSQL)**.
+- Edge routing middleware running natively on Vercel Edge.
+
+### 3. 6 Secure Delivery Modes
+1. **Direct Redirect**: Instant 301/302 edge redirect with query parameter forwarding.
+2. **Password Protection**: Web Crypto PBKDF2 (100,000 iterations) challenge gate.
+3. **NSFW Age Verification**: Cryptographic HMAC-SHA256 18+ confirmation gate.
+4. **Interstitial Countdown**: Branded countdown timer with `<meta http-equiv="refresh">` fallback.
+5. **Link Cloaking**: Responsive full-viewport iframe cloaking preserving the short domain in browser address bars.
+6. **Clean Reverse Proxy**: Full hop-by-hop header scrubbing with real client IP preservation.
+
+### 4. Admin Encrypted Backup & Restore (`/admin`)
+- **AES-256-GCM Cryptographic Engine**: Back up all platform data encrypted with a user-defined passphrase using PBKDF2 (100,000 iterations, 12-byte IV, 16-byte authentication tag).
+- **Granular Dataset Selection**: Selectively export/restore links, clicks, domains, webhooks, API keys, users, sessions, invite codes, and site settings.
+- **Cryptographic Validation**: Dry-run integrity validation and tamper detection before restore execution.
+
+### 5. VIP Invitations & Access Control
+- **Dual Registration Modes**: VIP invite codes (`RUN-VIP-XXXXX`) or direct email invitations.
+- **One-Click Email Dispatch**: Admins can dispatch invitations directly from `/admin`.
+- **Locked Registration Code**: Invitation links (`/login?code=...`) prefill and securely lock the invite code input to prevent tampering.
+- **Accurate Global Sessions**: Multi-hop proxy client IP resolver (`cf-connecting-ip`, `x-vercel-forwarded-for`, `x-forwarded-for`, `x-real-ip`) ensuring true client IP tracking across sessions.
+
+### 6. Outgoing Webhooks & Discord Embed Engine (`/webhooks`)
+- Real-time telemetry dispatch for `link.clicked`, `link.created`, and `security.blocked`.
+- Automatic Discord webhook detection with customizable bot username, avatar, and embed accent color.
+- HMAC-SHA256 signature verification (`X-Run-Signature`) for standard HTTP webhooks.
+
+### 7. Dynamic Routing & Device Targeting
+- **Device Targeting**: Conditional redirects for iOS (App Store) and Android (Google Play) via `ua-parser-js`.
+- **Geo-Targeting**: Country-specific destinations based on `x-vercel-ip-country`.
+- **A/B Split Testing**: Weighted traffic percentage splits across multiple destination variants.
+
+### 8. Analytics & 3D WebGL Globe (`/analytics`)
+- Interactive **3D WebGL Globe** built with Three.js rendering live geo-traffic pins.
+- Real-time telemetry streams with exponential backoff and tab visibility management.
+
+### 9. Dedicated Mobile Dashboard (`/m`)
+- Tailored mobile-first interface optimized for touch devices and quick short-link creation.
+- Seamless PC/Mobile mode toggling with device auto-detection.
+
+### 10. Native MCP Server (`/api/mcp`) & AI Agents
+- Official Model Context Protocol tools (`create_link`, `edit_link`, `list_links`, `check_links`, `get_analytics_views`) for Cursor, Claude Desktop, Antigravity, and autonomous workflows.
+- Full AI Agent handbook available in [`AGENT_GUIDE.md`](./AGENT_GUIDE.md).
 
 ---
 
@@ -49,18 +66,22 @@
 
 | Layer | Component |
 | :--- | :--- |
+| **Runtime & Package Manager** | **Bun** (`bun`, `bun run`, `bun test`, `bunx`) |
 | **Framework** | SvelteKit 2 + Svelte 5 (Runes) |
 | **Styling** | Tailwind CSS v4, Lucide Svelte, Bits UI |
 | **Database** | Turso (LibSQL / SQLite) via Drizzle ORM |
 | **Edge Cache** | Upstash Redis (`@upstash/redis`) / Vercel KV |
 | **Analytics Engine** | Tinybird (ClickHouse) / SQLite aggregation |
 | **Authentication** | Better Auth (Drizzle adapter with multi-tenant workspaces & API keys) |
+| **Cryptography** | Web Crypto API (AES-256-GCM, PBKDF2, HMAC-SHA256) |
 | **AI Integration** | Vercel AI SDK (`ai` + `@ai-sdk/google` Gemini 2.0 Flash) |
-| **Object Storage** | Vercel Blob (`@vercel/blob`) for automated daily database backups |
+| **Object Storage** | Vercel Blob (`@vercel/blob`) for automated backups |
 
 ---
 
 ## 📦 Getting Started (Local Development)
+
+> **Note**: This project strictly uses **Bun** as its package manager and test runner.
 
 ### 1. Install Dependencies
 ```bash
@@ -79,17 +100,22 @@ BETTER_AUTH_SECRET="your-32-char-random-secret"
 SITE_TOKEN="your-secure-hmac-salt"
 ```
 
-### 3. Database Schema Push
+### 3. Database Schema Push & Initial Migration
 ```bash
 bun run db:push
 ```
 
-### 4. Run Development Server
+### 4. Run Test Suite
+```bash
+bun test
+```
+
+### 5. Run Development Server
 ```bash
 bun run dev
 ```
 
-Visit [http://localhost:5173](http://localhost:5173).
+Visit [http://localhost:5173](http://localhost:5173). The first registered user will automatically become the **Super Administrator** and have their private Personal Workspace initialized.
 
 ---
 
@@ -103,8 +129,8 @@ Visit [http://localhost:5173](http://localhost:5173).
    ```
 
 2. **Deploy to Vercel**:
-   * Connect your GitHub repository to Vercel.
-   * Configure Environment Variables in the Vercel Dashboard:
+   - Connect your GitHub repository to Vercel.
+   - Configure Environment Variables in the Vercel Dashboard:
      - `DATABASE_URL`: `libsql://run-db-yourorg.turso.io`
      - `DATABASE_AUTH_TOKEN`: `<your-turso-auth-token>`
      - `ORIGIN`: `https://go.run.link`
@@ -112,9 +138,10 @@ Visit [http://localhost:5173](http://localhost:5173).
      - `SITE_TOKEN`: Generate with `openssl rand -hex 32`
      - `CRON_SECRET`: Generate with `openssl rand -hex 32`
      - *(Optional)* `UPSTASH_REDIS_REST_URL` & `UPSTASH_REDIS_REST_TOKEN`
+     - *(Optional)* `RESEND_API_KEY` (for invitation emails)
      - *(Optional)* `BLOB_READ_WRITE_TOKEN`
      - *(Optional)* `GOOGLE_GENERATIVE_AI_API_KEY`
-   * Push schema to remote Turso:
+   - Push schema to remote Turso:
      ```bash
      DATABASE_URL="libsql://run-db-yourorg.turso.io" DATABASE_AUTH_TOKEN="..." bun run db:push
      ```
@@ -123,7 +150,6 @@ Visit [http://localhost:5173](http://localhost:5173).
    ```bash
    bun run release
    ```
-   Or push a semver tag: `git push origin v1.3.0`.
 
 ---
 
@@ -135,7 +161,7 @@ To connect Run to Claude Desktop, Cursor, or Antigravity, add to your MCP client
 {
   "mcpServers": {
     "run": {
-      "command": "npx",
+      "command": "bunx",
       "args": ["-y", "@modelcontextprotocol/server-fetch", "https://go.run.link/api/mcp"],
       "env": {
         "AUTHORIZATION": "Bearer run_live_YOUR_API_TOKEN"
@@ -144,4 +170,4 @@ To connect Run to Claude Desktop, Cursor, or Antigravity, add to your MCP client
   }
 }
 ```
-Consult [`AGENT_GUIDE.md`](./AGENT_GUIDE.md) for full tool signatures and machine interfaces.
+Consult [`AGENT_GUIDE.md`](./AGENT_GUIDE.md) for full tool signatures, machine interfaces, and API endpoints.

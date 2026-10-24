@@ -1,47 +1,160 @@
 # Run — AI Agent Handbook & Machine Protocol Guide
-**Version:** 2.0.0  
+**Version:** 2.6.0  
 **Target:** Autonomous AI Agents, LLM Integrators, MCP Clients & Automated Workflow Engines
 
 ---
 
 ## 1. Executive Summary & Capabilities
 
-**Run** is a high-speed, edge-first link management, security gating, and analytics platform. It runs on the Vercel Edge Runtime and LibSQL/Turso database with write-through KV caching.
+**Run** is a high-speed, edge-first link management, multi-tenant workspace, security gating, and analytics platform. It runs on the Vercel Edge Runtime and LibSQL/Turso database with write-through KV caching.
 
 ### Core Capabilities for AI Agents
-1. **High-Speed Link Resolution**: In-memory and KV write-through resolution with `<10ms` response times.
-2. **6 Dynamic Delivery Modes**:
+1. **Multi-Tenant Workspaces & Privacy Isolation**:
+   - Every user automatically receives a private **Personal Workspace** upon signup/login.
+   - All links, custom domains, and analytics are strictly workspace-isolated (`links.workspaceId`).
+   - `trusted` and `admin` users can create collaborative **Team Workspaces** and invite team members.
+   - Signed, tamper-proof 7-day join tokens and direct invitation emails.
+2. **Encrypted Admin Backup & Restore**:
+   - AES-256-GCM authenticated encryption with PBKDF2 key derivation (100,000 iterations).
+   - Granular dataset selection for export and import.
+   - Dry-run validation and tamper-detection prior to data restoration.
+3. **VIP Invitation Engine & Locked Registration**:
+   - Invitation codes (`RUN-VIP-XXXXX`) and direct email dispatch from `/admin`.
+   - Registration flow locks the code input when visited via `/login?code=...` to ensure invite integrity.
+4. **Accurate Client IP Resolution**:
+   - Multi-hop reverse proxy extraction (`cf-connecting-ip`, `x-vercel-forwarded-for`, `x-forwarded-for`, `x-real-ip`).
+   - Automatic session record self-healing to eliminate `127.0.0.1` placeholders in global active session tracking.
+5. **High-Speed Link Resolution (<10ms)**:
+   - Multi-tier edge caching with Upstash Redis / Vercel KV write-through to Turso LibSQL.
+6. **6 Dynamic Delivery Modes**:
    - `direct`: Ultra-fast HTTP 302 edge redirect with query parameter preservation.
    - `password`: PBKDF2 Web Crypto challenge gate requiring secret passkey verification.
    - `age_gate`: HMAC-SHA256 token verification gate (`?_verified=...`).
    - `interstitial`: Timed countdown screen with auto-refresh meta tags.
    - `cloaked`: Viewport-constrained HTML iframe mask preserving the short domain in browser address bar.
    - `reverse_proxy`: Transparent upstream streaming fetch with hop-by-hop header scrubbing.
-3. **Dynamic Device & Geo Targeting**: Instant conditional rerouting based on client User-Agent (`iOS`, `Android`) and Edge country headers (`x-vercel-ip-country`).
-4. **Model Context Protocol (MCP)**: Native JSON-RPC 2.0 interface at `/api/mcp` for agentic pair programming and automated link management.
-5. **Real-time Event Webhooks**: Automated dispatching for `link.clicked`, `link.created`, and `security.blocked` with automatic Discord rich embed styling.
-6. **Invite-Only Registration System**: Cryptographically generated invite tokens (`RUN-VIP-XXXXX`) and role-based permissions (`admin`, `trusted`, `member`).
+7. **Dynamic Device & Geo Targeting**:
+   - Instant conditional rerouting based on client User-Agent (`iOS`, `Android`) and Edge country headers (`x-vercel-ip-country`).
+8. **Model Context Protocol (MCP)**:
+   - Native JSON-RPC 2.0 interface at `/api/mcp` for agentic pair programming and automated link management.
+9. **Real-time Event Webhooks & Discord Embeds**:
+   - Automated dispatching for `link.clicked`, `link.created`, and `security.blocked` with automatic Discord rich embed styling.
 
 ---
 
-## 2. Authentication & Authorization
+## 2. Authentication, Roles & Multi-Tenant Workspaces
 
+### 1. Machine Authentication
 All machine requests must authenticate using a Bearer token generated from the Run API Keys management dashboard (`/api-keys`).
 
 ```http
 Authorization: Bearer run_live_YOUR_SECRET_KEY
 ```
 
-### Role Hierarchy
+API keys are bound to a specific `workspaceId`. Any link created or queried using an API key is strictly scoped to that key's workspace.
+
+### 2. User Roles & Permissions
 | Role | Capabilities |
 | :--- | :--- |
-| `admin` | Full system governance, global site config, cross-user session revocation, invite authority. |
-| `trusted` | Short link lifecycle, outgoing webhooks, Discord embed customization, VIP invite generation. |
-| `member` | Short link creation, custom QR codes, personal analytics inspection. |
+| `admin` | Full system governance, global site config, encrypted backup/restore, cross-user session revocation, invite code & email authority, team workspace creation. |
+| `trusted` | Short link lifecycle, team workspace creation, outgoing webhooks, Discord embed customization, VIP invite generation. |
+| `member` | Short link creation within personal workspace and invited team workspaces, custom QR codes, personal analytics inspection. |
+
+### 3. Workspace Roles
+Within a specific workspace:
+- `owner`: Can rename, manage members, generate invite links, and delete the workspace.
+- `admin`: Can manage links, domains, and invite collaborators.
+- `member`: Can create, edit, and view links within the workspace.
 
 ---
 
-## 3. Model Context Protocol (MCP) Interface
+## 3. Multi-Tenant Workspace Architecture & APIs
+
+### 1. Workspace Resolution Flow
+1. **Cookie Inspection**: Server loads check the `run_active_workspace` cookie.
+2. **Membership Verification**: The system verifies that the authenticated user has an active membership record in the `member` table for that organization ID.
+3. **Automatic Fallback**: If no cookie is present or access is invalid, the user defaults to their private **Personal Workspace** (`ensurePersonalWorkspace`).
+
+### 2. Workspace Endpoints
+
+#### Switch Active Workspace
+- `POST /api/workspaces/switch`
+- **Payload:** `{ "workspaceId": "uuid" }`
+- **Response:** `{ "success": true, "workspaceId": "uuid" }` (sets `run_active_workspace` cookie).
+
+#### Create Team Workspace
+- `POST /api/workspaces/create`
+- **Requirements:** Role must be `trusted` or `admin`.
+- **Payload:** `{ "name": "Team Growth Marketing" }`
+- **Response:** `{ "success": true, "workspace": { ... } }` (automatically sets new workspace as active).
+
+#### Invite Collaborator
+- `POST /api/workspaces/invite`
+- **Payload:**
+  ```json
+  {
+    "workspaceId": "uuid",
+    "email": "colleague@company.com",
+    "role": "member"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "success": true,
+    "token": "signed_token_string",
+    "joinUrl": "https://go.run.link/workspace/join?token=signed_token_string",
+    "emailSent": true
+  }
+  ```
+
+#### Accept Workspace Invitation
+- `GET /workspace/join?token=<token>`: Displays the invitation page.
+- `POST /workspace/join`: Accepts the invitation, joins the workspace, and redirects to dashboard.
+
+---
+
+## 4. Encrypted Backup & Restore Specification
+
+Run provides an enterprise-grade administrative backup and restore subsystem located at `/admin`.
+
+### Cryptographic Architecture
+- **Algorithm:** AES-256-GCM authenticated encryption.
+- **Key Derivation:** Web Crypto `PBKDF2` with SHA-256, 100,000 iterations, 16-byte cryptographically random salt.
+- **IV & Tag:** 12-byte initialization vector (IV), 16-byte authentication tag for tamper resistance.
+- **Envelope Format:**
+  ```json
+  {
+    "version": 1,
+    "encrypted": true,
+    "algorithm": "AES-256-GCM",
+    "kdf": "PBKDF2",
+    "iterations": 100000,
+    "salt": "<hex>",
+    "iv": "<hex>",
+    "tag": "<hex>",
+    "ciphertext": "<base64>",
+    "metadata": {
+      "timestamp": "2026-10-24T23:00:00.000Z",
+      "datasets": ["links", "clicks", "domains"]
+    }
+  }
+  ```
+
+### Supported Datasets
+- `links`: Short link configurations and routing logic.
+- `clicks`: Telemetry and click event logs.
+- `domains`: Custom registered and verified domains.
+- `webhooks`: Outgoing webhook URLs and Discord configurations.
+- `apiKeys`: Hashed API tokens and workspace scopes.
+- `users`: User profiles and role assignments.
+- `sessions`: Active bearer sessions.
+- `inviteCodes`: VIP registration invite codes.
+- `siteSettings`: Site configurations and feature flags.
+
+---
+
+## 5. Model Context Protocol (MCP) Interface
 
 Run exposes an official MCP server at `/api/mcp`. Autonomous agents should use these tools over raw SQL queries whenever possible.
 
@@ -53,7 +166,7 @@ Run exposes an official MCP server at `/api/mcp`. Autonomous agents should use t
 ### Available MCP Tools
 
 #### `create_link`
-Creates a short link with optional delivery security, device routing, and geo-targeting.
+Creates a short link scoped to the active workspace with optional delivery security, device routing, and geo-targeting.
 
 ```json
 {
@@ -94,7 +207,7 @@ Modifies an existing short link's routing rules or archives it.
 ```
 
 #### `list_links`
-Returns links matching pagination and search filters.
+Returns links matching pagination and search filters within the authenticated workspace.
 
 ```json
 {
@@ -129,7 +242,7 @@ Checks a list of destination URLs for reachability and HTTP status codes.
 ```
 
 #### `get_analytics_views`
-Queries aggregated click and visit telemetry.
+Queries aggregated click and visit telemetry for the active workspace.
 
 ```json
 {
@@ -148,109 +261,25 @@ Queries aggregated click and visit telemetry.
 
 ---
 
-## 4. REST API Specification
+## 6. REST API Specification
 
-### 1. OpenAPI 3.1 Definition
-- Inspect current schema: `GET /api/openapi.json`
-
-### 2. Link Management Endpoints
+### Link Management Endpoints
 
 #### List Links
 - `GET /api/links`
-- **Response:** Array of link records ordered by creation date.
+- Returns links belonging to the authenticated workspace.
 
 #### Create Link
 - `POST /api/links`
-- **Headers:** `Content-Type: application/json`, `Authorization: Bearer run_live_...`
-- **Payload Schema:**
-  ```json
-  {
-    "destinationUrl": "https://example.com/target",
-    "slug": "custom-slug",
-    "title": "Optional Card Title",
-    "description": "Optional Card Description",
-    "image": "https://example.com/banner.png",
-    "deliveryMode": "direct",
-    "password": null,
-    "interstitialDuration": 5,
-    "expiresAt": null,
-    "maxClicks": 1000,
-    "redirectWithQuery": true,
-    "deviceRouting": {
-      "ios": "https://apps.apple.com/app/id123",
-      "android": "https://play.google.com/store/apps/details?id=com.app"
-    },
-    "geoRouting": {
-      "US": "https://us.example.com",
-      "DE": "https://de.example.com"
-    },
-    "tags": ["launch", "mobile"]
-  }
-  ```
+- Assigns newly created links to the active workspace.
 
 #### Update Link
 - `PATCH /api/links`
-- **Payload:** Requires `"id": "link_id"`, plus any updated fields.
+- Modifies a link, verifying that the link belongs to the active workspace.
 
 #### Delete Link
 - `DELETE /api/links?id=link_id`
-- Soft-deletes the link (`isArchived: true`) and immediately evicts the KV edge cache.
-
----
-
-## 5. Delivery Modes Specification
-
-When creating or modifying links, agents can assign one of the 6 delivery modes:
-
-| Mode | Key | Behavior | Gate Logic |
-| :--- | :--- | :--- | :--- |
-| **Direct** | `direct` | Instant HTTP 302 Edge redirect. | Forward client to destination URL. Preserve query strings if `redirectWithQuery=true`. |
-| **Password** | `password` | PBKDF2 Password Challenge Screen. | Checked via `?_pwd=<password>` or interactive form. Web Crypto PBKDF2 100,000 iterations. |
-| **Age Gate** | `age_gate` | NSFW 18+ Verification Modal. | Checked via `?_verified=<token>` (HMAC-SHA256 signature of slug + site secret). |
-| **Interstitial** | `interstitial` | 5-second countdown timer. | Returns HTML with progress bar and `<meta http-equiv="refresh">` target. |
-| **Cloaked** | `cloaked` | Full-viewport `<iframe>` wrapper. | Keeps `go.run.link/<slug>` in the browser URL bar while embedding the target content. |
-| **Reverse Proxy** | `reverse_proxy` | Transparent upstream edge streaming. | Server fetches target URL, strips hop headers, and returns body directly to client. |
-
----
-
-## 6. Outgoing Webhooks & Discord Telemetry Engine
-
-Run dispatches asynchronous HTTP POST requests to configured webhooks on platform events.
-
-### Subscribed Events
-- `link.clicked`: Triggered whenever an incoming request resolves and redirects.
-- `link.created`: Triggered when a new short link is saved.
-- `security.blocked`: Triggered when a password gate or age verification challenge fails.
-
-### Automatic Discord Webhook Detection
-If the target URL matches `https://discord.com/api/webhooks/*`, Run automatically formats the payload as a rich Discord Embed:
-- **Bot Customization:** Configurable `username`, `avatar_url`, and decimal `embedColor`.
-- **Telemetry Fields:** Automatic extraction of `Slug`, `Destination URL`, `Location (City, Country)`, `Client (Device, OS, Browser)`, and `Referer`.
-
-### Standard Webhook Payload Structure
-```json
-{
-  "id": "evt_018f32a8-8e6d-7cb1-92bc-418f78a2e105",
-  "event": "link.clicked",
-  "timestamp": "2026-10-24T00:15:00.000Z",
-  "data": {
-    "slug": "launch",
-    "destinationUrl": "https://example.com/target",
-    "deliveryMode": "direct",
-    "country": "US",
-    "city": "San Francisco",
-    "deviceType": "Desktop",
-    "browser": "Chrome 131",
-    "os": "macOS",
-    "referer": "https://t.co/",
-    "ip": "198.51.100.42"
-  }
-}
-```
-If a `secret` is configured, an HMAC-SHA256 signature is transmitted in header:
-```http
-X-Run-Signature: 7c54a...
-```
+- Deletes a link scoped to the active workspace and immediately evicts the edge KV cache.
 
 ---
 
@@ -258,15 +287,34 @@ X-Run-Signature: 7c54a...
 
 ```mermaid
 erDiagram
+    ORGANIZATION ||--o{ MEMBER : contains
     ORGANIZATION ||--o{ LINKS : owns
     ORGANIZATION ||--o{ DOMAINS : registers
     ORGANIZATION ||--o{ API_KEYS : authorizes
     ORGANIZATION ||--o{ WEBHOOKS : dispatches
+    USER ||--o{ MEMBER : joins
     USER ||--o{ SESSION : authenticates
     USER ||--o{ INVITE_CODES : generates
 
+    ORGANIZATION {
+        string id PK
+        string name
+        string slug UK
+        json metadata
+        date created_at
+    }
+
+    MEMBER {
+        string id PK
+        string organization_id FK
+        string user_id FK
+        string role
+        date created_at
+    }
+
     LINKS {
         string id PK
+        string workspace_id FK
         string slug UK
         string destination_url
         string delivery_mode
@@ -278,6 +326,7 @@ erDiagram
 
     DOMAINS {
         string id PK
+        string workspace_id FK
         string name UK
         boolean verified
         boolean primary
@@ -299,6 +348,7 @@ erDiagram
 
     WEBHOOKS {
         string id PK
+        string workspace_id FK
         string name
         string url
         string secret
@@ -309,46 +359,14 @@ erDiagram
 
 ---
 
-## 8. Agentic Best Practices & Error Recovery
+## 8. Agentic Operating Guidelines & Release Protocol
 
-1. **Avoid Slug Collisions:** Always query `list_links` or catch HTTP 409 Conflict when generating custom slugs.
-2. **Observe KV Cache Invalidation:** Creating, updating, or deleting a link automatically calls `linkCache.invalidate(domain, slug)`. Subsequent requests will hit Turso LibSQL directly until KV re-populates.
-3. **Respect Rate Limits:** When polling `/api/stats/live`, maintain at least a 10-second polling interval and obey HTTP 429 backoff headers.
-4. **Use MCP for Pair Programming:** Point your AI agent client (Cursor, Claude Desktop, Antigravity) to `http://localhost:5173/api/mcp` using the Bearer token for autonomous link generation.
-
----
-
-## 9. Autonomous Release Policy & Versioning Protocol
-
-Autonomous agents working on this repository must adhere to the following release automation rules:
-
-### 1. Automatic Release Trigger Criteria
-Whenever you finish implementing a feature, patch, or set of commits, evaluate whether to automatically cut a GitHub release:
-- **Scope Threshold:** The changes are **large or significant enough** (e.g., major feature additions such as dedicated mobile layouts, new delivery modes, authentication overhauls, security hardening, or critical platform bug fixes).
-- **Confidence Requirement:** You are **strictly confident that the feature or patch is working flawlessly**. This requires:
-  1. Running `bun run check` (`svelte-check`) with **zero errors and zero warnings**.
-  2. Verifying edge runtime safety (no Node.js native globals in edge paths without browser/web fallback).
-  3. Confirming that all database migrations and schema references match the live database.
-- **Action:** If both conditions are satisfied:
-  1. Bump the version in [`package.json`](file:///d:/MG/Coding/run/package.json) following Semantic Versioning (`minor` for feature additions, `patch` for fixes, `major` for breaking redesigns).
-  2. Commit the version bump with Conventional Commits (`chore(release): bump version to vX.Y.Z`).
-  3. Push to `main` (`git push origin main`).
-  4. Trigger release script: `bun scripts/release.ts vX.Y.Z --title "vX.Y.Z: <Descriptive Feature Title>" --generate-notes`.
-
-### 2. Failure Handling & Redo Protocol ("Redo Previous Release")
-If a release is published or tested and regressions, runtime errors, or broken builds are subsequently detected:
-- **Do not leave a broken release published as latest.**
-- **Redo Protocol:**
-  1. Investigate and locate the root cause immediately.
-  2. Apply the necessary fixes and run `bun run check` until completely passing.
-  3. Delete the broken GitHub release and remote tag:
-     ```bash
-     gh release delete <tag> -y
-     git tag -d <tag>
-     git push --delete origin <tag>
-     ```
-  4. Once confident and verified, re-create the release cleanly at the fixed commit:
-     ```bash
-     bun scripts/release.ts <tag> --title "vX.Y.Z: <Descriptive Title>" --generate-notes
-     ```
-
+1. **Strict Bun Environment**:
+   - Always run commands via `bun` (`bun run`, `bun test`, `bunx`).
+2. **Never Query Cross-Tenant Data**:
+   - Always verify that database queries filter by `workspaceId = activeWorkspace.id`.
+3. **Observe KV Invalidation**:
+   - Any mutation to a link automatically invalidates the edge cache via `linkCache.invalidate(domain, slug)`.
+4. **Autonomous Release Criteria**:
+   - For major updates or feature completions, verify via `bun test`.
+   - Bump SemVer in `package.json`, commit, push to `main`, and execute `bun scripts/release.ts`.
