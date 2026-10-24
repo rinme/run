@@ -4,13 +4,15 @@ import { db } from '#lib/server/db/index.ts';
 import { links } from '#lib/server/db/schema.ts';
 import { desc } from 'drizzle-orm';
 
-let tinybirdApiUrl = process.env.TINYBIRD_API_URL || '';
-let tinybirdToken = process.env.TINYBIRD_TOKEN || '';
+let tinybirdApiUrl = (process.env.TINYBIRD_API_URL || process.env.TINYBIRD_URL || '').replace(/\/+$/, '');
+let tinybirdToken = (process.env.TINYBIRD_TOKEN || '').trim();
 
 try {
-	const privateEnv = await import('$app/env/private');
-	if (privateEnv.TINYBIRD_API_URL) tinybirdApiUrl = privateEnv.TINYBIRD_API_URL;
-	if (privateEnv.TINYBIRD_TOKEN) tinybirdToken = privateEnv.TINYBIRD_TOKEN;
+	const privateEnv = (await import('$app/env/private')) as Record<string, string | undefined>;
+	if (privateEnv.TINYBIRD_API_URL || privateEnv.TINYBIRD_URL) {
+		tinybirdApiUrl = (privateEnv.TINYBIRD_API_URL || privateEnv.TINYBIRD_URL || '').replace(/\/+$/, '');
+	}
+	if (privateEnv.TINYBIRD_TOKEN) tinybirdToken = privateEnv.TINYBIRD_TOKEN.trim();
 } catch {}
 
 export const GET: RequestHandler = async () => {
@@ -21,7 +23,7 @@ export const GET: RequestHandler = async () => {
 				const controller = new AbortController();
 				const timeoutId = setTimeout(() => controller.abort(), 2000);
 
-				const query = `SELECT timestamp, link_id as id, slug, country, city, device_type as deviceType, browser, os, referer FROM clicks ORDER BY timestamp DESC LIMIT 20`;
+				const query = `SELECT timestamp, link_id as id, slug, country, city, device_type as deviceType, browser, os, referer FROM clicks ORDER BY timestamp DESC LIMIT 20 FORMAT JSON`;
 				const res = await fetch(
 					`${tinybirdApiUrl}/v0/sql?q=${encodeURIComponent(query)}`,
 					{

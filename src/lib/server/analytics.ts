@@ -3,13 +3,15 @@ import { db } from './db';
 import { links } from './db/schema';
 import { eq, sql } from 'drizzle-orm';
 
-let tinybirdApiUrl = process.env.TINYBIRD_API_URL || '';
-let tinybirdToken = process.env.TINYBIRD_TOKEN || '';
+let tinybirdApiUrl = (process.env.TINYBIRD_API_URL || process.env.TINYBIRD_URL || '').replace(/\/+$/, '');
+let tinybirdToken = (process.env.TINYBIRD_TOKEN || '').trim();
 
 try {
-	const privateEnv = await import('$app/env/private');
-	if (privateEnv.TINYBIRD_API_URL) tinybirdApiUrl = privateEnv.TINYBIRD_API_URL;
-	if (privateEnv.TINYBIRD_TOKEN) tinybirdToken = privateEnv.TINYBIRD_TOKEN;
+	const privateEnv = (await import('$app/env/private')) as Record<string, string | undefined>;
+	if (privateEnv.TINYBIRD_API_URL || privateEnv.TINYBIRD_URL) {
+		tinybirdApiUrl = (privateEnv.TINYBIRD_API_URL || privateEnv.TINYBIRD_URL || '').replace(/\/+$/, '');
+	}
+	if (privateEnv.TINYBIRD_TOKEN) tinybirdToken = privateEnv.TINYBIRD_TOKEN.trim();
 } catch {}
 
 export interface ClickEvent {

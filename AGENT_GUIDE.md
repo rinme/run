@@ -1,5 +1,5 @@
 # Run — AI Agent Handbook & Machine Protocol Guide
-**Version:** 2.6.0  
+**Version:** 2.6.1  
 **Target:** Autonomous AI Agents, LLM Integrators, MCP Clients & Automated Workflow Engines
 
 ---

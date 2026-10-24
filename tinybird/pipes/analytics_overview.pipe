@@ -1,0 +1,11 @@
+DESCRIPTION >
+    Aggregate overview statistics from clicks
+
+NODE endpoint
+SQL >
+    SELECT
+        count() as totalClicks,
+        uniq(link_id) as totalLinks
+    FROM clicks
+
+TYPE ENDPOINT

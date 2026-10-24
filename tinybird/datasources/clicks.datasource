@@ -1,0 +1,18 @@
+SCHEMA >
+    `timestamp` DateTime `json:$.timestamp`,
+    `link_id` String `json:$.link_id`,
+    `slug` String `json:$.slug`,
+    `destination_url` String `json:$.destination_url`,
+    `workspace_id` String `json:$.workspace_id`,
+    `domain` String `json:$.domain`,
+    `country` LowCardinality(String) `json:$.country`,
+    `city` String `json:$.city`,
+    `device_type` LowCardinality(String) `json:$.device_type`,
+    `browser` LowCardinality(String) `json:$.browser`,
+    `os` LowCardinality(String) `json:$.os`,
+    `referer` String `json:$.referer`,
+    `ip` String `json:$.ip`
+
+ENGINE "MergeTree"
+ENGINE_PARTITION_KEY "toYYYYMM(timestamp)"
+ENGINE_SORTING_KEY "workspace_id, slug, timestamp"
