@@ -5,6 +5,7 @@ import { links, apiKeys, type NewLink } from '#lib/server/db/schema.ts';
 import { linkCache } from '#lib/server/cache.ts';
 import { authenticateApiRequest, getOrCreateDefaultWorkspace } from '#lib/server/api-auth.ts';
 import { RESERVED_PATHS } from '#lib/server/resolver.ts';
+import { convertRunToSinkLink } from '#lib/server/migration.ts';
 import { eq, desc, and } from 'drizzle-orm';
 
 /**
@@ -102,6 +103,25 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 								url: { type: 'string', description: 'URL to check' }
 							},
 							required: ['url']
+						}
+					},
+					{
+						name: 'export_links',
+						description: 'Export workspace links in Native Run or Sink v1.0 migration format',
+						inputSchema: {
+							type: 'object',
+							properties: {
+								format: {
+									type: 'string',
+									enum: ['run', 'sink'],
+									description: 'Export format: "run" for full Run metadata, or "sink" for Sink v1.0 compatibility'
+								},
+								status: {
+									type: 'string',
+									enum: ['all', 'active', 'expired'],
+									description: 'Status filter: "all", "active", or "expired"'
+								}
+							}
 						}
 					}
 				]
@@ -283,6 +303,74 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 						}
 					});
 				}
+			}
+
+			case 'export_links': {
+				const format = args.format === 'sink' ? 'sink' : 'run';
+				const status = args.status || 'all';
+				const now = new Date();
+
+				const allLinks = await db
+					.select()
+					.from(links)
+					.where(eq(links.isArchived, false))
+					.orderBy(desc(links.createdAt));
+
+				let filtered = allLinks;
+				if (status === 'active') {
+					filtered = allLinks.filter((l) => !l.expiresAt || new Date(l.expiresAt) > now);
+				} else if (status === 'expired') {
+					filtered = allLinks.filter((l) => l.expiresAt && new Date(l.expiresAt) <= now);
+				}
+
+				if (format === 'sink') {
+					const sinkLinks = filtered.map(convertRunToSinkLink);
+					return json({
+						jsonrpc: '2.0',
+						id,
+						result: {
+							content: [
+								{
+									type: 'text',
+									text: JSON.stringify(
+										{
+											version: '1.0',
+											exportedAt: new Date().toISOString(),
+											count: sinkLinks.length,
+											links: sinkLinks,
+											list_complete: true
+										},
+										null,
+										2
+									)
+								}
+							]
+						}
+					});
+				}
+
+				return json({
+					jsonrpc: '2.0',
+					id,
+					result: {
+						content: [
+							{
+								type: 'text',
+								text: JSON.stringify(
+									{
+										version: '2.2.0',
+										exportedAt: new Date().toISOString(),
+										generator: 'run',
+										count: filtered.length,
+										links: filtered
+									},
+									null,
+									2
+								)
+							}
+						]
+					}
+				});
 			}
 
 			default:

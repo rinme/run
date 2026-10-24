@@ -68,6 +68,47 @@ export const GET: RequestHandler = async ({ url }) => {
 					}
 				}
 			},
+			'/api/links/export': {
+				get: {
+					summary: 'Export Links',
+					description: 'Export links in Run Native format or Sink v1.0 compatible format',
+					parameters: [
+						{ name: 'format', in: 'query', schema: { type: 'string', enum: ['run', 'sink'], default: 'run' } },
+						{ name: 'status', in: 'query', schema: { type: 'string', enum: ['all', 'active', 'expired'], default: 'all' } }
+					],
+					responses: {
+						'200': { description: 'Exported JSON file attachment' }
+					}
+				}
+			},
+			'/api/links/import': {
+				post: {
+					summary: 'Import & Migrate Links',
+					description: 'Import links from Run or Sink v1.0 export files with slug collision resolution and domain remapping',
+					requestBody: {
+						required: true,
+						content: {
+							'application/json': {
+								schema: {
+									type: 'object',
+									required: ['payload'],
+									properties: {
+										payload: { type: 'object', description: 'Exported JSON object or array' },
+										format: { type: 'string', enum: ['auto', 'run', 'sink'], default: 'auto' },
+										conflictStrategy: { type: 'string', enum: ['skip', 'overwrite', 'rename'], default: 'skip' },
+										targetDomainId: { type: 'string' },
+										remapDomainUrl: { type: 'string' },
+										useOriginDomain: { type: 'boolean', default: false }
+									}
+								}
+							}
+						}
+					},
+					responses: {
+						'200': { description: 'Import result summary with counts and logs' }
+					}
+				}
+			},
 			'/api/ai/suggest': {
 				post: {
 					summary: 'AI Slug & Summary Generator',

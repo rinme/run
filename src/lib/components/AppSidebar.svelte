@@ -34,7 +34,7 @@
 		{ label: 'Custom Domains', href: '/domains', icon: Globe },
 		{ label: 'API Keys & MCP', href: '/api-keys', icon: KeyRound },
 		{ label: 'Changelog', href: '/changelog', icon: History },
-		{ label: 'Settings & Backups', href: '/settings', icon: Settings }
+		{ label: 'Settings & Migration', href: '/settings', icon: Settings }
 	];
 
 	const managementItems = [

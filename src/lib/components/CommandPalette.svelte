@@ -10,6 +10,7 @@
 		Settings,
 		Plus,
 		Download,
+		Upload,
 		Terminal,
 		ArrowRight,
 		X,
@@ -48,6 +49,7 @@
 		{ id: 'account', title: 'Go to Account & Security', category: 'Navigation', icon: User, action: () => { onClose(); goto('/account'); } },
 		{ id: 'admin', title: 'Go to Admin System Control', category: 'Navigation', icon: Shield, action: () => { onClose(); goto('/admin'); } },
 		{ id: 'settings', title: 'Go to Settings & Backups', category: 'Navigation', icon: Settings, action: () => { onClose(); goto('/settings'); } },
+		{ id: 'import-export', title: 'Import / Export Links (Sink Migration)', category: 'Actions', icon: Upload, action: () => { onClose(); goto('/settings'); } },
 		{ id: 'backup', title: 'Trigger Database Snapshot Backup', category: 'Actions', icon: Download, action: () => { onClose(); goto('/settings#backup'); } }
 	];
 
