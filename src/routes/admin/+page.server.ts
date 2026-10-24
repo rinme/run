@@ -5,7 +5,10 @@ import {
 	user,
 	session,
 	links,
+	domains,
+	utmTemplates,
 	inviteCodes,
+	siteSettings,
 	webhooks,
 	type InviteCode
 } from '#lib/server/db/schema.ts';
@@ -18,6 +21,8 @@ import {
 	type SiteFeaturesConfig
 } from '#lib/server/settings.ts';
 import { createInviteCode } from '#lib/server/invites.ts';
+import { sendInviteEmail } from '#lib/server/email.ts';
+import { DATASET_METADATA } from '#lib/server/backup-service.ts';
 import { eq, desc, count, sql, and, ne } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
@@ -51,6 +56,9 @@ export const load: PageServerLoad = async (event) => {
 	const [sessionCount] = await db.select({ total: count() }).from(session);
 	const [inviteCount] = await db.select({ total: count() }).from(inviteCodes);
 	const [webhookCount] = await db.select({ total: count() }).from(webhooks);
+	const [domainCount] = await db.select({ total: count() }).from(domains);
+	const [utmCount] = await db.select({ total: count() }).from(utmTemplates);
+	const [settingsCount] = await db.select({ total: count() }).from(siteSettings);
 
 	// 3. Load All Active Sessions across all users with user metadata
 	const allSessions = await db
@@ -79,8 +87,20 @@ export const load: PageServerLoad = async (event) => {
 			links: linkCount.total,
 			sessions: sessionCount.total,
 			invites: inviteCount.total,
-			webhooks: webhookCount.total
+			webhooks: webhookCount.total,
+			domains: domainCount.total,
+			utmTemplates: utmCount.total,
+			siteSettings: settingsCount.total
 		},
+		backupStats: {
+			links: linkCount.total,
+			domains: domainCount.total,
+			utmTemplates: utmCount.total,
+			webhooks: webhookCount.total,
+			siteSettings: settingsCount.total,
+			inviteCodes: inviteCount.total
+		},
+		datasetMetadata: DATASET_METADATA,
 		sessions: allSessions.map((s) => ({
 			...s,
 			isCurrent: s.id === event.locals.session?.id
@@ -230,5 +250,92 @@ export const actions: Actions = {
 
 		await db.delete(inviteCodes).where(eq(inviteCodes.id, inviteId));
 		return { success: true, message: 'Invite code deleted' };
+	},
+
+	sendInviteEmail: async (event) => {
+		if (!event.locals.user?.id) throw redirect(302, '/login');
+
+		const formData = await event.request.formData();
+		const inviteId = formData.get('inviteId')?.toString();
+		const recipientEmail = formData.get('recipientEmail')?.toString().trim().toLowerCase();
+
+		if (!recipientEmail || !recipientEmail.includes('@')) {
+			return fail(400, { message: 'A valid recipient email address is required' });
+		}
+
+		if (!inviteId) return fail(400, { message: 'Invite ID is required' });
+
+		const [target] = await db.select().from(inviteCodes).where(eq(inviteCodes.id, inviteId)).limit(1);
+		if (!target) {
+			return fail(404, { message: 'Invite code not found' });
+		}
+
+		try {
+			const result = await sendInviteEmail({
+				recipient: recipientEmail,
+				code: target.code,
+				role: target.role,
+				origin: event.url.origin,
+				maxUses: target.maxUses,
+				inviterName: event.locals.user.name || 'Run Administrator'
+			});
+
+			if (!result.success) {
+				return fail(500, { message: result.error || 'Failed to dispatch email' });
+			}
+
+			return {
+				success: true,
+				message: `Invitation email sent to ${recipientEmail} via ${result.provider}`
+			};
+		} catch (err: any) {
+			return fail(500, { message: err.message || 'Email delivery failed' });
+		}
+	},
+
+	createAndEmailInvite: async (event) => {
+		if (!event.locals.user?.id) throw redirect(302, '/login');
+
+		const formData = await event.request.formData();
+		const code = formData.get('code')?.toString().trim();
+		const maxUses = parseInt(formData.get('maxUses')?.toString() || '1', 10);
+		const role = (formData.get('role')?.toString() as any) || 'member';
+		const recipientEmail = formData.get('recipientEmail')?.toString().trim().toLowerCase();
+
+		if (!recipientEmail || !recipientEmail.includes('@')) {
+			return fail(400, { message: 'A valid recipient email address is required' });
+		}
+
+		try {
+			const newInvite = await createInviteCode({
+				code: code || undefined,
+				maxUses: isNaN(maxUses) ? 1 : maxUses,
+				role,
+				creatorId: event.locals.user.id
+			});
+
+			const result = await sendInviteEmail({
+				recipient: recipientEmail,
+				code: newInvite.code,
+				role: newInvite.role,
+				origin: event.url.origin,
+				maxUses: newInvite.maxUses,
+				inviterName: event.locals.user.name || 'Run Administrator'
+			});
+
+			if (!result.success) {
+				return {
+					success: true,
+					message: `Invite code ${newInvite.code} created, but email dispatch failed: ${result.error}`
+				};
+			}
+
+			return {
+				success: true,
+				message: `VIP code ${newInvite.code} created and emailed to ${recipientEmail}`
+			};
+		} catch (e: any) {
+			return fail(400, { message: e.message || 'Failed to create invite and email' });
+		}
 	}
 };
