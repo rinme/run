@@ -171,6 +171,9 @@
 					<div class="space-y-1">
 						<div class="flex items-center gap-2">
 							<span class="font-mono text-zinc-200">{sess.ipAddress}</span>
+							{#if sess.ipAddress === '127.0.0.1' || sess.ipAddress === '::1'}
+								<span class="text-[10px] text-zinc-500 font-sans">(Localhost)</span>
+							{/if}
 							{#if sess.isCurrent}
 								<span class="px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-800/60 text-emerald-400 text-[10px] font-medium">
 									Current Device

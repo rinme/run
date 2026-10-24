@@ -6,6 +6,7 @@ import { user } from '#lib/server/db/schema.ts';
 import { getSiteSetting, DEFAULT_AUTH_CONFIG, type SiteAuthConfig } from '#lib/server/settings.ts';
 import { validateInviteCode, consumeInviteCode } from '#lib/server/invites.ts';
 import { getOrCreateDefaultWorkspace } from '#lib/server/api-auth.ts';
+import { createForwardedHeaders } from '#lib/server/ip.ts';
 import { eq, count } from 'drizzle-orm';
 import { APIError } from 'better-auth/api';
 
@@ -49,9 +50,12 @@ export const actions: Actions = {
 			return fail(400, { message: 'Email and password are required', mode: 'signin' });
 		}
 
+		const headers = createForwardedHeaders(event);
+
 		try {
 			await auth.api.signInEmail({
-				body: { email, password, callbackURL: '/' }
+				body: { email, password, callbackURL: '/' },
+				headers
 			});
 		} catch (error) {
 			if (error instanceof APIError) {
@@ -105,9 +109,12 @@ export const actions: Actions = {
 			grantedRole = (validation.invite.role as 'admin' | 'trusted' | 'member') || 'member';
 		}
 
+		const headers = createForwardedHeaders(event);
+
 		try {
 			await auth.api.signUpEmail({
-				body: { email, password, name, callbackURL: '/' }
+				body: { email, password, name, callbackURL: '/' },
+				headers
 			});
 
 			if (isFirstUser) {

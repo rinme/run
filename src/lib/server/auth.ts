@@ -11,6 +11,17 @@ export const auth = betterAuth({
 	secret: BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'sqlite' }),
 	emailAndPassword: { enabled: true },
+	advanced: {
+		ipAddress: {
+			ipAddressHeaders: [
+				'cf-connecting-ip',
+				'true-client-ip',
+				'x-vercel-forwarded-for',
+				'x-real-ip',
+				'x-forwarded-for'
+			]
+		}
+	},
 	user: {
 		additionalFields: {
 			role: {

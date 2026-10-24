@@ -160,6 +160,9 @@
 					<div class="min-w-0 flex-1">
 						<div class="flex items-center gap-1.5">
 							<span class="font-mono text-zinc-200 text-[11px] truncate">{sess.ipAddress}</span>
+							{#if sess.ipAddress === '127.0.0.1' || sess.ipAddress === '::1'}
+								<span class="text-[9px] text-zinc-500 font-sans">(Localhost)</span>
+							{/if}
 							{#if sess.isCurrent}
 								<span class="text-[9px] px-1 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
 									Current

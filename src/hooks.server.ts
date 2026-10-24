@@ -1,10 +1,14 @@
 import type { Handle } from '@sveltejs/kit/hooks';
 import { building } from '$app/env';
 import { auth } from '#lib/server/auth.ts';
+import { db } from '#lib/server/db/index.ts';
+import { session as sessionTable } from '#lib/server/db/schema.ts';
+import { eq } from 'drizzle-orm';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { resolveShortLink } from '#lib/server/resolver.ts';
 import { redirect } from '@sveltejs/kit';
 import { UAParser } from 'ua-parser-js';
+import { getClientIp, createForwardedHeaders } from '#lib/server/ip.ts';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// 1. Resolve short links at the edge before hitting app route SSR
@@ -19,11 +23,32 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	// 2. Handle Better Auth session & pass to SvelteKit app routes
-	const session = await auth.api.getSession({ headers: event.request.headers });
+	const forwardedHeaders = createForwardedHeaders(event);
+	const session = await auth.api.getSession({ headers: forwardedHeaders });
 
 	if (session) {
 		event.locals.session = session.session;
 		event.locals.user = session.user as App.ExtendedUser;
+
+		// Self-healing: if session record has empty or default IP, backfill with true client IP & UA
+		const clientIp = getClientIp(event);
+		const userAgent = event.request.headers.get('user-agent') || '';
+		if (
+			session.session.id &&
+			(!session.session.ipAddress || session.session.ipAddress === '127.0.0.1' || !session.session.userAgent)
+		) {
+			if (clientIp && clientIp !== '127.0.0.1') {
+				db.update(sessionTable)
+					.set({
+						ipAddress: clientIp,
+						userAgent: userAgent || session.session.userAgent
+					})
+					.where(eq(sessionTable.id, session.session.id))
+					.catch(() => {});
+				session.session.ipAddress = clientIp;
+				if (userAgent) session.session.userAgent = userAgent;
+			}
+		}
 	}
 
 	// 3. Global Auth Guard: protect all private dashboard pages from unauthenticated access

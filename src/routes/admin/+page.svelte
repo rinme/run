@@ -651,7 +651,10 @@
 								</td>
 								<td class="p-3 font-mono text-zinc-300">
 									<div class="flex items-center gap-2">
-										<span>{sess.ipAddress || '127.0.0.1'}</span>
+										<span>{sess.ipAddress || 'Unknown IP'}</span>
+										{#if sess.ipAddress === '127.0.0.1' || sess.ipAddress === '::1'}
+											<span class="text-[10px] text-zinc-500 font-sans">(Localhost)</span>
+										{/if}
 										{#if sess.isCurrent}
 											<span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800">
 												You
