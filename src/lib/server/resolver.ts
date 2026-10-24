@@ -497,7 +497,6 @@ function renderExpiredPage(slug: string, reason: string): string {
   <div class="card">
     <h1>Link Inactive</h1>
     <p>${escapeHtml(reason)}</p>
-    <p style="margin-top: 16px; font-size: 0.8rem; color: #71717a;">Powered by Run</p>
   </div>
 </body>
 </html>`;

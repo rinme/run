@@ -131,7 +131,7 @@ export const actions: Actions = {
 			smtpUser: formData.get('smtpUser')?.toString().trim() || '',
 			smtpPass: formData.get('smtpPass')?.toString() || '',
 			fromEmail: formData.get('fromEmail')?.toString().trim() || 'noreply@run.link',
-			fromName: formData.get('fromName')?.toString().trim() || 'Run Link Engine',
+			fromName: formData.get('fromName')?.toString().trim() || 'Run',
 			resendApiKey: formData.get('resendApiKey')?.toString().trim() || ''
 		};
 

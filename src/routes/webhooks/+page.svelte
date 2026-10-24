@@ -22,7 +22,7 @@
 		targetUrl.includes('discord.com/api/webhooks') || targetUrl.includes('discordapp.com/api/webhooks')
 	);
 
-	let discordUsername = $state('Run Link Engine');
+	let discordUsername = $state('Run');
 	let discordAvatarUrl = $state('https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/zap.png');
 	let discordColor = $state('#10b981');
 
@@ -163,7 +163,7 @@
 								<input type="checkbox" name="evt_clicked" value="true" checked class="rounded border-zinc-700 bg-zinc-900 text-emerald-500 focus:ring-0" />
 								<div>
 									<div class="font-medium">link.clicked</div>
-									<div class="text-[10px] text-zinc-500">Every link visit & edge redirect</div>
+									<div class="text-[10px] text-zinc-500">Every link visit and redirect</div>
 								</div>
 							</label>
 
@@ -253,7 +253,7 @@
 										<div class="col-span-2"><span class="text-zinc-500 block text-[9px] uppercase font-bold">Target URL</span> https://example.com/product</div>
 									</div>
 									<div class="mt-2 text-[9px] text-zinc-500 flex items-center justify-between border-t border-zinc-800 pt-1">
-										<span>Run Link Engine</span>
+										<span>Run</span>
 										<span>Today at 12:00 PM</span>
 									</div>
 								</div>

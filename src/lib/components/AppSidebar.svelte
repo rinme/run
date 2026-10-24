@@ -56,11 +56,8 @@
 				R
 			</div>
 			<div class="flex flex-col">
-				<div class="flex items-center gap-1.5">
-					<span class="text-xs font-bold text-zinc-100 tracking-tight">Run Platform</span>
-					<span class="text-[9px] uppercase font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/60 font-semibold">Edge</span>
-				</div>
-				<span class="text-[11px] text-zinc-400 font-medium">Personal Workspace</span>
+				<span class="text-xs font-bold text-zinc-100 tracking-tight">Run</span>
+				<span class="text-[11px] text-zinc-400 font-medium">Workspace</span>
 			</div>
 		</div>
 	</div>
@@ -170,12 +167,12 @@
 		</div>
 	</nav>
 
-	<!-- Edge Status Footer -->
-	<div class="p-3 border-t border-zinc-800/80 bg-zinc-950/40 flex items-center justify-between">
-		<div class="flex items-center gap-2 text-xs text-zinc-400">
-			<span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-			<span class="font-mono text-[11px]">Vercel Edge &bull; &lt;8ms</span>
+	<!-- Status Footer -->
+	<div class="p-3 border-t border-zinc-800/80 bg-zinc-950/40 flex items-center justify-between text-xs text-zinc-500 font-mono">
+		<div class="flex items-center gap-2">
+			<span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+			<span class="text-[11px]">System Online</span>
 		</div>
-		<span class="text-[10px] font-mono text-zinc-500">v2.0</span>
+		<span class="text-[10px]">v2.4.0</span>
 	</div>
 </aside>

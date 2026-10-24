@@ -42,12 +42,6 @@
 
 		<!-- Top Quick Actions -->
 		<div class="flex items-center gap-2">
-			<!-- Live Edge Ping Indicator -->
-			<div class="hidden xs:flex items-center gap-1.5 px-2 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] text-zinc-400 font-mono">
-				<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-				<span>Edge</span>
-			</div>
-
 			<!-- Switch to PC Button -->
 			<a
 				href="/api/view-mode?mode=desktop&redirect=/"

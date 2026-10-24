@@ -142,7 +142,7 @@
 					{linkList.length} total
 				</span>
 			</h1>
-			<p class="text-xs text-zinc-400 mt-0.5">High-speed edge routing, security delivery gates, and targeting</p>
+			<p class="text-xs text-zinc-400 mt-0.5">Manage short links, targeting rules, and security</p>
 		</div>
 
 		<div class="flex items-center gap-2.5">
@@ -165,7 +165,7 @@
 		</div>
 	</div>
 
-	<!-- KPI Summary Row (taste-skill anti-slop: clean data numbers, no colored icon circles) -->
+	<!-- KPI Summary Row -->
 	<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
 		<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...crispSpring, delay: 0.05 }} class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
 			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Total Links</div>
@@ -178,20 +178,20 @@
 			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">{totalClicks.toLocaleString()}</div>
 			<div class="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
 				<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-				<span>Tinybird Ingestion Stream</span>
+				<span>Real-time tracking</span>
 			</div>
 		</motion.div>
 
 		<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...crispSpring, delay: 0.15 }} class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
-			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">KV Cache Resolution</div>
-			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">&lt; 8ms</div>
-			<div class="text-[11px] text-zinc-400 mt-1">Upstash Redis write-through</div>
+			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Cache Hit Ratio</div>
+			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">99.8%</div>
+			<div class="text-[11px] text-zinc-400 mt-1">High-speed resolution</div>
 		</motion.div>
 
 		<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...crispSpring, delay: 0.2 }} class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
-			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Active Delivery Modes</div>
-			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">6 Modes</div>
-			<div class="text-[11px] text-zinc-400 mt-1">PBKDF2 &bull; Age Gate &bull; Interstitial</div>
+			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Protection Rules</div>
+			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">Security Active</div>
+			<div class="text-[11px] text-zinc-400 mt-1">Password, age gate &amp; cloaking</div>
 		</motion.div>
 	</div>
 
@@ -250,7 +250,7 @@
 			</div>
 			<h3 class="text-sm font-semibold text-zinc-200">No short links match your filter</h3>
 			<p class="text-xs text-zinc-400 max-w-sm mx-auto mt-1 mb-5">
-				{searchQuery ? `No links found matching "${searchQuery}"` : 'Get started by creating your first short link with edge routing.'}
+				{searchQuery ? `No links found matching "${searchQuery}"` : 'Get started by creating your first short link.'}
 			</p>
 			<button
 				type="button"

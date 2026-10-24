@@ -38,7 +38,7 @@
 					? 'Enter your credentials to access the link management dashboard'
 					: data.registrationMode === 'invite_only'
 						? 'Membership is currently restricted by invite code or direct invitation'
-						: 'Create your account to start managing high-speed edge links'}
+						: 'Create your account to start managing links'}
 			</p>
 		</div>
 
@@ -263,11 +263,6 @@
 					</form>
 				{/if}
 			{/if}
-		</div>
-
-		<!-- Footer note -->
-		<div class="mt-6 text-center text-[11px] text-zinc-500">
-			Protected by Run Edge Security • Argon2 & PBKDF2 Session Guard
 		</div>
 	</div>
 </div>

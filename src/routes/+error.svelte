@@ -32,7 +32,7 @@
 				{:else if page.status === 404}
 					The requested short link, destination, or dashboard route could not be found on this instance.
 				{:else}
-					An unexpected condition was encountered. Edge routing and database telemetry have captured this event.
+					An unexpected condition was encountered. Please try again or return to the dashboard.
 				{/if}
 			</p>
 		</div>
@@ -55,11 +55,6 @@
 				<Home class="w-3.5 h-3.5" />
 				<span>Dashboard</span>
 			</a>
-		</div>
-
-		<!-- Support note -->
-		<div class="pt-6 border-t border-zinc-800/80 text-[11px] text-zinc-600 font-mono">
-			Run Edge Engine • Sub-10ms Routing
 		</div>
 	</div>
 </div>

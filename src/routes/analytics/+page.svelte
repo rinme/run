@@ -65,13 +65,9 @@
 	<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80">
 		<div>
 			<h1 class="text-xl font-bold tracking-tight text-zinc-100 flex items-center gap-2.5">
-				<span>Analytics &amp; Telemetry</span>
-				<span class="text-xs font-mono font-normal text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1.5">
-					<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-					Live Stream
-				</span>
+				<span>Analytics</span>
 			</h1>
-			<p class="text-xs text-zinc-400 mt-0.5">Click volume timeseries, geo-distributed traffic, and device metrics</p>
+			<p class="text-xs text-zinc-400 mt-0.5">Click volume, geographic distribution, and device metrics</p>
 		</div>
 
 		<div class="flex items-center gap-1 bg-zinc-900 p-1 border border-zinc-800 rounded-lg">
@@ -112,9 +108,9 @@
 		</div>
 
 		<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-4">
-			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Edge Lookup Latency</div>
-			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">7.2ms</div>
-			<div class="text-[11px] text-zinc-400 mt-1">99.8% cache hit ratio</div>
+			<div class="text-[11px] font-medium text-zinc-400 uppercase tracking-wider font-mono">Daily Average</div>
+			<div class="text-2xl font-bold tracking-tight text-zinc-100 mt-1 font-mono">342</div>
+			<div class="text-[11px] text-zinc-400 mt-1">Average daily volume</div>
 		</div>
 	</div>
 

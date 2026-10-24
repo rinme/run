@@ -292,7 +292,7 @@
 							<span>Create New Short Link</span>
 						{/if}
 					</h2>
-					<p class="text-xs text-zinc-400 mt-0.5">Edge routing, security challenge gates, and UTM rules</p>
+					<p class="text-xs text-zinc-400 mt-0.5">Configure destination, targeting rules, and security</p>
 				</div>
 				<button
 					type="button"

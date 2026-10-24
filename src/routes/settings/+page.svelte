@@ -257,12 +257,12 @@
 	<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800/80">
 		<div>
 			<h1 class="text-xl font-bold tracking-tight text-zinc-100 flex items-center gap-2.5">
-				<span>Settings &amp; Infrastructure</span>
+				<span>Settings</span>
 				<span class="text-xs font-mono font-normal text-zinc-400 bg-zinc-850 px-2 py-0.5 rounded-full border border-zinc-750">
 					Workspace
 				</span>
 			</h1>
-			<p class="text-xs text-zinc-400 mt-0.5">Workspace configuration, Sink migration, link imports/exports, and telemetry</p>
+			<p class="text-xs text-zinc-400 mt-0.5">Workspace configuration, link data management, and preferences</p>
 		</div>
 	</div>
 
@@ -279,7 +279,7 @@
 				<span class="text-blue-400 font-bold mt-1 block">personal</span>
 			</div>
 			<div class="p-3 bg-zinc-900/60 border border-zinc-800 rounded-lg">
-				<span class="text-zinc-500 block text-[10px] uppercase font-semibold">Default Edge Domain</span>
+				<span class="text-zinc-500 block text-[10px] uppercase font-semibold">Default Domain</span>
 				<span class="text-emerald-400 font-bold mt-1 block">{data?.siteConfig?.defaultDomain || page.url.host}</span>
 			</div>
 		</div>
@@ -636,9 +636,9 @@
 		</div>
 	</div>
 
-	<!-- System Telemetry Health Card -->
+	<!-- System Status Card -->
 	<div class="bg-[#101013] border border-zinc-800/80 rounded-xl p-5 space-y-4">
-		<h3 class="text-xs font-bold text-zinc-200 uppercase tracking-wider font-mono">Infrastructure Telemetry</h3>
+		<h3 class="text-xs font-bold text-zinc-200 uppercase tracking-wider font-mono">System Status</h3>
 		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
 			<div class="p-3 bg-zinc-900/60 border border-zinc-800 rounded-lg flex items-center justify-between">
 				<div class="space-y-0.5">
@@ -646,7 +646,7 @@
 						<Database class="w-3.5 h-3.5 text-blue-400" />
 						<span>Turso (LibSQL)</span>
 					</div>
-					<div class="text-[11px] text-zinc-500 font-mono">SQLite engine</div>
+					<div class="text-[11px] text-zinc-500 font-mono">Primary database</div>
 				</div>
 				<span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
 					Online
@@ -659,7 +659,7 @@
 						<Radio class="w-3.5 h-3.5 text-amber-400" />
 						<span>Upstash Redis</span>
 					</div>
-					<div class="text-[11px] text-zinc-500 font-mono">&lt;8ms KV cache</div>
+					<div class="text-[11px] text-zinc-500 font-mono">Distributed cache</div>
 				</div>
 				<span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
 					Active
@@ -672,7 +672,7 @@
 						<Server class="w-3.5 h-3.5 text-emerald-400" />
 						<span>Tinybird ClickHouse</span>
 					</div>
-					<div class="text-[11px] text-zinc-500 font-mono">Event streaming</div>
+					<div class="text-[11px] text-zinc-500 font-mono">Analytics storage</div>
 				</div>
 				<span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
 					Ready
@@ -688,7 +688,7 @@
 					<div class="text-[11px] text-zinc-500 font-mono">Slug &amp; OG AI</div>
 				</div>
 				<span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-					v2.5 Flash
+					Connected
 				</span>
 			</div>
 		</div>
@@ -702,8 +702,8 @@
 					<Wind class="w-4 h-4" />
 				</div>
 				<div>
-					<h3 class="text-xs font-bold text-zinc-200 uppercase tracking-wider font-mono">Motion &amp; Animation Accessibility</h3>
-					<p class="text-[11px] text-zinc-400">Powered by motion-svelte &bull; Configure spring physics and reduced motion accessibility</p>
+					<h3 class="text-xs font-bold text-zinc-200 uppercase tracking-wider font-mono">Motion &amp; Animations</h3>
+					<p class="text-[11px] text-zinc-400">Configure interface animation speed and accessibility preferences</p>
 				</div>
 			</div>
 			<span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
@@ -745,12 +745,12 @@
 							: 'bg-zinc-950/60 border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'}"
 					>
 						<span class="block text-xs font-semibold font-mono">Full Motion</span>
-						<span class="block text-[11px] text-zinc-500 mt-1">Enables crisp Framer-style spring physics (stiffness 300, damping 25).</span>
+						<span class="block text-[11px] text-zinc-500 mt-1">Enables natural spring physics and transitions.</span>
 					</button>
 				</div>
 
 				<div class="p-3 bg-zinc-950 border border-zinc-800/80 rounded-lg text-[11px] text-zinc-400 flex items-center justify-between font-mono">
-					<span>Active engine: motion-sv (Svelte 5)</span>
+					<span>Settings active</span>
 					<span class="text-zinc-500">Persisted locally in browser storage</span>
 				</div>
 			</div>

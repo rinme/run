@@ -8,9 +8,9 @@ export const GET: RequestHandler = async ({ url }) => {
 		openapi: '3.1.0',
 		info: {
 			title: 'Run API',
-			version: '2.0.0',
+			version: '2.4.0',
 			description:
-				'High-performance Edge Link Shortener & Analytics API with sub-10ms resolution, dynamic device/geo routing, password gates, and Tinybird stream ingestion.'
+				'Link shortener and analytics API with custom domain routing, security rules, and device targeting.'
 		},
 		servers: [
 			{

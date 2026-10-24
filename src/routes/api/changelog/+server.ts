@@ -37,7 +37,7 @@ const FALLBACK_RELEASES = [
 		published_at: new Date(Date.now() - 86400000 * 5).toISOString(),
 		html_url: 'https://github.com/rinme/run/releases',
 		prerelease: false,
-		body: `### Highlights\n- **Edge Routing & KV Cache**: Write-through cache architecture with sub-10ms link resolution.\n- **Model Context Protocol (MCP)**: Native JSON-RPC endpoint at \`/api/mcp\` exposing AI tools for agentic link automation.\n- **OpenAPI 3.1 Specification**: Available at \`/api/openapi.json\`.`
+		body: `### Highlights\n- **Fast Routing & Cache**: Write-through cache architecture with low-latency link resolution.\n- **Model Context Protocol (MCP)**: Native JSON-RPC endpoint at \`/api/mcp\` exposing AI tools for agentic link automation.\n- **OpenAPI 3.1 Specification**: Available at \`/api/openapi.json\`.`
 	}
 ];
 

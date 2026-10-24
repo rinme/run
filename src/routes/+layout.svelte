@@ -46,7 +46,7 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>Run — High-Performance Edge Link Platform</title>
+	<title>Run</title>
 </svelte:head>
 
 <MotionConfig reducedMotion={motionSettings.mode}>

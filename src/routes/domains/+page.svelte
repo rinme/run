@@ -119,7 +119,7 @@
 					{domainList.length} configured
 				</span>
 			</h1>
-			<p class="text-xs text-zinc-400 mt-0.5">Brand your links under your own domains with automated edge SSL routing</p>
+			<p class="text-xs text-zinc-400 mt-0.5">Configure custom domains for your short links</p>
 		</div>
 
 		<button

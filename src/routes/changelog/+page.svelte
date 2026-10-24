@@ -32,17 +32,12 @@
 	<!-- Page Header -->
 	<div class="border-b border-zinc-800 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 		<div>
-			<div class="flex items-center gap-2">
-				<span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-zinc-800 text-zinc-300 border border-zinc-700">
-					Continuous Delivery
-				</span>
-				<h1 class="text-xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
-					<History class="w-5 h-5 text-zinc-400" />
-					Changelog & Platform Releases
-				</h1>
-			</div>
+			<h1 class="text-xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
+				<History class="w-5 h-5 text-zinc-400" />
+				Changelog &amp; Releases
+			</h1>
 			<p class="text-xs text-zinc-400 mt-1">
-				Real-time deployment log synchronized with repository releases
+				Platform release history and updates
 			</p>
 		</div>
 

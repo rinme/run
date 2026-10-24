@@ -400,7 +400,7 @@
 								checked={data.settings.features.enableWebhooks}
 								class="rounded border-zinc-700 bg-zinc-950 text-emerald-500 focus:ring-0"
 							/>
-							<span>Enable Outgoing Webhooks & Discord Embed Engine</span>
+							<span>Enable Outgoing Webhooks & Discord Integration</span>
 						</label>
 
 						<label class="flex items-center gap-2.5 text-xs text-zinc-300 cursor-pointer">

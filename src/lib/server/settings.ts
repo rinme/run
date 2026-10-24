@@ -38,7 +38,7 @@ export interface SiteFeaturesConfig {
 
 export const DEFAULT_GENERAL_CONFIG: SiteGeneralConfig = {
 	siteTitle: 'Run',
-	siteTagline: 'High-Performance Edge-First Link Shortener & Analytics',
+	siteTagline: 'Link Management & Analytics',
 	siteUrl: process.env.ORIGIN || 'http://localhost:5173',
 	defaultDomain: process.env.ORIGIN
 		? (() => {

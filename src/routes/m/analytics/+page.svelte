@@ -49,7 +49,7 @@
 				<BarChart3 class="w-4 h-4 text-blue-400" />
 				<span>Traffic & Telemetry</span>
 			</h1>
-			<p class="text-xs text-zinc-400 mt-0.5">Real-time edge click metrics</p>
+			<p class="text-xs text-zinc-400 mt-0.5">Real-time click metrics</p>
 		</div>
 
 		<!-- 3D Globe Link for Desktop -->
@@ -83,22 +83,6 @@
 			<div class="text-[10px] uppercase font-mono tracking-wider text-zinc-400 font-medium">Avg / Link</div>
 			<div class="text-xl font-bold text-zinc-100 font-mono mt-1">{avgClicksPerLink}</div>
 			<div class="text-[9px] text-blue-400 font-medium mt-1">Engaged</div>
-		</div>
-	</div>
-
-	<!-- Edge Performance Banner -->
-	<div class="bg-blue-950/20 border border-blue-900/40 rounded-2xl p-3.5 flex items-center justify-between">
-		<div class="flex items-center gap-2.5">
-			<div class="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
-				<Activity class="w-4 h-4" />
-			</div>
-			<div>
-				<div class="text-xs font-semibold text-zinc-200">Vercel Edge Gateway</div>
-				<div class="text-[11px] text-zinc-400">&lt;8ms worldwide redirection</div>
-			</div>
-		</div>
-		<div class="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono text-[10px] font-semibold">
-			ONLINE
 		</div>
 	</div>
 

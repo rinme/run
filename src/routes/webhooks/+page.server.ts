@@ -77,7 +77,7 @@ export const actions: Actions = {
 
 		let discordConfig: string | null = null;
 		if (isDiscord) {
-			const username = formData.get('discordUsername')?.toString().trim() || 'Run Link Engine';
+			const username = formData.get('discordUsername')?.toString().trim() || 'Run';
 			const avatarUrl = formData.get('discordAvatarUrl')?.toString().trim() || '';
 			const embedColorHex = formData.get('discordColor')?.toString().replace('#', '') || '10b981';
 			const embedColor = parseInt(embedColorHex, 16) || 0x10b981;

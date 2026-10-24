@@ -198,7 +198,7 @@
 			<div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
 				<div>
 					<h2 class="text-lg font-semibold text-zinc-100">Create Short Link</h2>
-					<p class="text-xs text-zinc-400">Configure destination, routing rules, and security gates</p>
+					<p class="text-xs text-zinc-400">Configure destination, routing rules, and security</p>
 				</div>
 				<button
 					type="button"
