@@ -2,17 +2,24 @@ import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 import { db } from '#lib/server/db/index.ts';
 import { links, domains } from '#lib/server/db/schema.ts';
-import { desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, and, sql } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, parent }) => {
 	if (!locals.user) {
 		throw redirect(302, '/login');
 	}
 
+	const { activeWorkspace } = await parent();
+	const workspaceId = activeWorkspace?.id;
+
+	const linkWhere = workspaceId
+		? and(eq(links.isArchived, false), eq(links.workspaceId, workspaceId))
+		: eq(links.isArchived, false);
+
 	const allLinks = await db
 		.select()
 		.from(links)
-		.where(eq(links.isArchived, false))
+		.where(linkWhere)
 		.orderBy(desc(links.createdAt))
 		.limit(50);
 
@@ -20,9 +27,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.select({
 			totalClicks: sql<number>`sum(${links.currentClicks})`
 		})
-		.from(links);
+		.from(links)
+		.where(linkWhere);
 
-	const allDomains = await db.select().from(domains);
+	const allDomains = workspaceId
+		? await db.select().from(domains).where(eq(domains.workspaceId, workspaceId))
+		: await db.select().from(domains);
 
 	return {
 		links: allLinks,

@@ -1,6 +1,8 @@
 import { db } from './db';
 import { apiKeys, organization, member } from './db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
+import { ensurePersonalWorkspace } from './workspaces';
+import type { Cookies } from '@sveltejs/kit';
 
 export interface ApiAuthResult {
 	authenticated: boolean;
@@ -69,18 +71,62 @@ export async function getOrCreateDefaultWorkspace(userId?: string): Promise<stri
  */
 export async function authenticateApiRequest(
 	request: Request,
-	locals: App.Locals
+	locals: App.Locals,
+	cookies?: Cookies
 ): Promise<ApiAuthResult> {
 	// 1. Check Better Auth session from cookie
 	if (locals.user) {
-		const activeOrgId = (locals.session as { activeOrganizationId?: string } | undefined)
-			?.activeOrganizationId;
-		const workspaceId = activeOrgId || (await getOrCreateDefaultWorkspace(locals.user.id));
+		let activeWorkspaceId: string | null = null;
+
+		// Check cookie parameter or cookie header from request
+		let cookieWorkspaceId = cookies?.get('run_active_workspace');
+		if (!cookieWorkspaceId) {
+			const cookieHeader = request.headers.get('cookie') || '';
+			const match = cookieHeader.match(/run_active_workspace=([^;]+)/);
+			if (match) {
+				cookieWorkspaceId = decodeURIComponent(match[1]);
+			}
+		}
+
+		if (cookieWorkspaceId) {
+			// Verify user is actually a member of this workspace
+			const [membership] = await db
+				.select({ organizationId: member.organizationId })
+				.from(member)
+				.where(and(eq(member.userId, locals.user.id), eq(member.organizationId, cookieWorkspaceId)))
+				.limit(1);
+
+			if (membership) {
+				activeWorkspaceId = membership.organizationId;
+			}
+		}
+
+		// Fallback: Check Better Auth activeOrganizationId
+		if (!activeWorkspaceId) {
+			const activeOrgId = (locals.session as { activeOrganizationId?: string } | undefined)
+				?.activeOrganizationId;
+			if (activeOrgId) {
+				const [membership] = await db
+					.select({ organizationId: member.organizationId })
+					.from(member)
+					.where(and(eq(member.userId, locals.user.id), eq(member.organizationId, activeOrgId)))
+					.limit(1);
+				if (membership) {
+					activeWorkspaceId = membership.organizationId;
+				}
+			}
+		}
+
+		// Fallback: Ensure personal workspace exists
+		if (!activeWorkspaceId) {
+			const personal = await ensurePersonalWorkspace(locals.user.id, locals.user.name);
+			activeWorkspaceId = personal.id;
+		}
 
 		return {
 			authenticated: true,
 			authMethod: 'session',
-			workspaceId,
+			workspaceId: activeWorkspaceId,
 			userId: locals.user.id,
 			scopes: ['*']
 		};

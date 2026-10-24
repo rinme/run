@@ -1,9 +1,16 @@
 import type { PageServerLoad } from './$types';
 import { db } from '#lib/server/db/index.ts';
 import { links } from '#lib/server/db/schema.ts';
-import { sql, desc } from 'drizzle-orm';
+import { sql, desc, eq, and } from 'drizzle-orm';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ parent }) => {
+	const { activeWorkspace } = await parent();
+	const workspaceId = activeWorkspace?.id;
+
+	const whereClause = workspaceId
+		? and(eq(links.isArchived, false), eq(links.workspaceId, workspaceId))
+		: eq(links.isArchived, false);
+
 	const allLinks = await db
 		.select({
 			id: links.id,
@@ -13,6 +20,7 @@ export const load: PageServerLoad = async () => {
 			currentClicks: links.currentClicks
 		})
 		.from(links)
+		.where(whereClause)
 		.orderBy(desc(links.currentClicks))
 		.limit(10);
 
@@ -20,7 +28,8 @@ export const load: PageServerLoad = async () => {
 		.select({
 			total: sql<number>`sum(${links.currentClicks})`
 		})
-		.from(links);
+		.from(links)
+		.where(whereClause);
 
 	return {
 		topLinks: allLinks,

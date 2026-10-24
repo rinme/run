@@ -9,19 +9,24 @@ import { authenticateApiRequest, getOrCreateDefaultWorkspace } from '#lib/server
 import { RESERVED_PATHS } from '#lib/server/resolver.ts';
 import { eq, desc, and, ne } from 'drizzle-orm';
 
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ request, locals, cookies }) => {
+	const auth = await authenticateApiRequest(request, locals, cookies);
+	if (!auth.authenticated) {
+		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+	}
+
 	const allLinks = await db
 		.select()
 		.from(links)
-		.where(eq(links.isArchived, false))
+		.where(and(eq(links.isArchived, false), eq(links.workspaceId, auth.workspaceId)))
 		.orderBy(desc(links.createdAt))
 		.limit(100);
 
 	return json(allLinks);
 };
 
-export const POST: RequestHandler = async ({ request, locals }) => {
-	const auth = await authenticateApiRequest(request, locals);
+export const POST: RequestHandler = async ({ request, locals, cookies }) => {
+	const auth = await authenticateApiRequest(request, locals, cookies);
 	if (!auth.authenticated) {
 		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
 	}
@@ -57,7 +62,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		passwordHash = await hashPassword(data.password);
 	}
 
-	const workspaceId = auth.workspaceId || (await getOrCreateDefaultWorkspace(auth.userId));
+	const workspaceId = auth.workspaceId;
 
 	const newLink: NewLink = {
 		workspaceId,
@@ -92,8 +97,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	return json(created, { status: 201 });
 };
 
-export const PATCH: RequestHandler = async ({ request, locals }) => {
-	const auth = await authenticateApiRequest(request, locals);
+export const PATCH: RequestHandler = async ({ request, locals, cookies }) => {
+	const auth = await authenticateApiRequest(request, locals, cookies);
 	if (!auth.authenticated) {
 		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
 	}
@@ -105,7 +110,11 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'Link ID is required for updating' }, { status: 400 });
 	}
 
-	const [currentLink] = await db.select().from(links).where(eq(links.id, id)).limit(1);
+	const [currentLink] = await db
+		.select()
+		.from(links)
+		.where(and(eq(links.id, id), eq(links.workspaceId, auth.workspaceId)))
+		.limit(1);
 	if (!currentLink) {
 		return json({ error: 'Link not found' }, { status: 404 });
 	}
@@ -170,8 +179,8 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 	return json(updated);
 };
 
-export const DELETE: RequestHandler = async ({ url, request, locals }) => {
-	const auth = await authenticateApiRequest(request, locals);
+export const DELETE: RequestHandler = async ({ url, request, locals, cookies }) => {
+	const auth = await authenticateApiRequest(request, locals, cookies);
 	if (!auth.authenticated) {
 		return json({ error: auth.error || 'Unauthorized' }, { status: 401 });
 	}
@@ -181,9 +190,13 @@ export const DELETE: RequestHandler = async ({ url, request, locals }) => {
 		return json({ error: 'Missing link id' }, { status: 400 });
 	}
 
-	const [link] = await db.select().from(links).where(eq(links.id, id)).limit(1);
+	const [link] = await db
+		.select()
+		.from(links)
+		.where(and(eq(links.id, id), eq(links.workspaceId, auth.workspaceId)))
+		.limit(1);
 	if (link) {
-		await db.delete(links).where(eq(links.id, id));
+		await db.delete(links).where(and(eq(links.id, id), eq(links.workspaceId, auth.workspaceId)));
 		await linkCache.invalidate(null, link.slug);
 	}
 
