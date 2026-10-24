@@ -9,10 +9,13 @@ import { resolveShortLink } from '#lib/server/resolver.ts';
 import { redirect } from '@sveltejs/kit';
 import { UAParser } from 'ua-parser-js';
 import { getClientIp, createForwardedHeaders } from '#lib/server/ip.ts';
+import { runWorkspaceMigration } from '#lib/server/workspace-migration.ts';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	// 1. Resolve short links at the edge before hitting app route SSR
 	if (!building) {
+		runWorkspaceMigration().catch(() => {});
+
 		const resolution = await resolveShortLink(event.request, event.url);
 		if (resolution.type === 'redirect' && resolution.location) {
 			return Response.redirect(resolution.location, resolution.status || 302);
@@ -57,6 +60,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		pathname === '/login' ||
 		pathname.startsWith('/login/') ||
 		pathname.startsWith('/invite/') ||
+		pathname.startsWith('/workspace/join') ||
 		pathname.startsWith('/api/') ||
 		pathname.startsWith('/demo/better-auth') ||
 		pathname === '/favicon.ico' ||
