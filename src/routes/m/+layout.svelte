@@ -9,6 +9,7 @@
 		Monitor,
 		Zap
 	} from 'lucide-svelte';
+	import WorkspaceSwitcher from '#lib/components/WorkspaceSwitcher.svelte';
 
 	let { data, children }: LayoutProps = $props();
 
@@ -29,28 +30,30 @@
 
 <div class="min-h-screen bg-[#09090b] text-zinc-100 flex flex-col font-sans selection:bg-blue-600/30">
 	<!-- Mobile Sticky Top Bar -->
-	<header class="sticky top-0 z-40 bg-[#0c0c0e]/95 backdrop-blur-md border-b border-zinc-800/80 px-4 h-14 flex items-center justify-between">
-		<div class="flex items-center gap-2.5">
-			<div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center font-black text-xs text-white shadow-sm shadow-blue-500/20">
-				R
-			</div>
-			<div class="flex items-center gap-1.5">
-				<span class="text-sm font-bold text-zinc-100 tracking-tight">Run</span>
+	<header class="sticky top-0 z-40 bg-[#0c0c0e]/95 backdrop-blur-md border-b border-zinc-800/80 px-3 py-2 flex flex-col gap-2">
+		<div class="flex items-center justify-between">
+			<div class="flex items-center gap-2">
+				<div class="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center font-black text-xs text-white shadow-xs">
+					R
+				</div>
+				<span class="text-xs font-bold text-zinc-100 tracking-tight">Run</span>
 				<span class="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-semibold">Mobile</span>
 			</div>
-		</div>
 
-		<!-- Top Quick Actions -->
-		<div class="flex items-center gap-2">
 			<!-- Switch to PC Button -->
 			<a
 				href="/api/view-mode?mode=desktop&redirect=/"
-				class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-lg text-xs font-medium text-zinc-300 transition-colors shadow-xs active:scale-95"
+				class="inline-flex items-center gap-1.5 px-2 py-1 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-md text-[11px] font-medium text-zinc-300 transition-colors active:scale-95"
 				title="Switch to PC View"
 			>
-				<Monitor class="w-3.5 h-3.5 text-zinc-400" />
-				<span class="text-[11px]">PC View</span>
+				<Monitor class="w-3 h-3 text-zinc-400" />
+				<span>PC View</span>
 			</a>
+		</div>
+
+		<!-- Workspace Selector for Mobile -->
+		<div class="w-full">
+			<WorkspaceSwitcher />
 		</div>
 	</header>
 

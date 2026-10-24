@@ -17,6 +17,7 @@
 		User,
 		Smartphone
 	} from 'lucide-svelte';
+	import WorkspaceSwitcher from './WorkspaceSwitcher.svelte';
 
 	interface SidebarProps {
 		onOpenCommandPalette?: () => void;
@@ -49,17 +50,9 @@
 </script>
 
 <aside class="w-64 border-r border-zinc-800/80 bg-[#0c0c0e] flex flex-col shrink-0 select-none h-screen sticky top-0">
-	<!-- Workspace / Product Header -->
-	<div class="h-16 px-4 border-b border-zinc-800/80 flex items-center justify-between">
-		<div class="flex items-center gap-2.5">
-			<div class="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center font-black text-xs text-white shadow-sm">
-				R
-			</div>
-			<div class="flex flex-col">
-				<span class="text-xs font-bold text-zinc-100 tracking-tight">Run</span>
-				<span class="text-[11px] text-zinc-400 font-medium">Workspace</span>
-			</div>
-		</div>
+	<!-- Workspace Switcher Header -->
+	<div class="px-3 py-3 border-b border-zinc-800/80">
+		<WorkspaceSwitcher />
 	</div>
 
 	<!-- Command Palette Trigger Button -->
