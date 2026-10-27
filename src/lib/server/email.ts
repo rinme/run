@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 import { getSiteSetting, DEFAULT_EMAIL_CONFIG, DEFAULT_GENERAL_CONFIG, type SiteEmailConfig, type SiteGeneralConfig } from './settings';
 
 export interface InviteEmailOptions {
@@ -8,6 +9,30 @@ export interface InviteEmailOptions {
 	origin?: string;
 	maxUses?: number;
 	inviterName?: string;
+}
+
+export interface WorkspaceInviteEmailOptions {
+	recipient: string;
+	workspaceName: string;
+	joinUrl: string;
+	inviterName?: string;
+	appName?: string;
+	role?: string;
+}
+
+export interface DispatchEmailOptions {
+	to: string;
+	subject: string;
+	html: string;
+	text?: string;
+}
+
+export interface EmailDispatchResult {
+	success: boolean;
+	provider: string;
+	messageId?: string;
+	error?: string;
+	previewUrl?: string;
 }
 
 export function generateInviteEmailHtml(options: {
@@ -108,105 +133,6 @@ export function generateInviteEmailHtml(options: {
 </html>`;
 }
 
-/**
- * Dispatches the invitation email via configured provider (Resend / SMTP / Console)
- */
-export async function sendInviteEmail(options: InviteEmailOptions): Promise<{
-	success: boolean;
-	provider: string;
-	messageId?: string;
-	previewUrl?: string;
-	error?: string;
-}> {
-	const emailConfig = await getSiteSetting<SiteEmailConfig>('email', DEFAULT_EMAIL_CONFIG);
-	const generalConfig = await getSiteSetting<SiteGeneralConfig>('general', DEFAULT_GENERAL_CONFIG);
-
-	const appName = generalConfig.siteTitle || 'Run';
-	const origin = options.origin || generalConfig.siteUrl || 'http://localhost:5173';
-	const registrationUrl = `${origin.replace(/\/$/, '')}/login?code=${encodeURIComponent(options.code)}`;
-
-	const htmlBody = generateInviteEmailHtml({
-		code: options.code,
-		appName,
-		origin,
-		role: options.role,
-		maxUses: options.maxUses,
-		inviterName: options.inviterName
-	});
-
-	const subject = `You're invited to ${appName} (VIP Invite: ${options.code})`;
-
-	// 1. Resend API Provider
-	if (emailConfig.provider === 'resend' || emailConfig.resendApiKey) {
-		const apiKey = emailConfig.resendApiKey || process.env.RESEND_API_KEY;
-		if (apiKey) {
-			try {
-				const from = emailConfig.fromName
-					? `${emailConfig.fromName} <${emailConfig.fromEmail || 'onboarding@resend.dev'}>`
-					: emailConfig.fromEmail || 'onboarding@resend.dev';
-
-				const res = await fetch('https://api.resend.com/emails', {
-					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${apiKey}`,
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						from,
-						to: [options.recipient],
-						subject,
-						html: htmlBody
-					})
-				});
-
-				const data = (await res.json()) as any;
-				if (!res.ok) {
-					console.error('Resend API error:', data);
-					return {
-						success: false,
-						provider: 'resend',
-						error: data.message || `Resend returned status ${res.status}`
-					};
-				}
-
-				return {
-					success: true,
-					provider: 'resend',
-					messageId: data.id,
-					previewUrl: registrationUrl
-				};
-			} catch (err: any) {
-				console.error('Failed to dispatch via Resend:', err);
-				return { success: false, provider: 'resend', error: err.message };
-			}
-		}
-	}
-
-	// 2. Console fallback (or development mode)
-	console.log(`\n======================================================`);
-	console.log(`[INVITATION EMAIL DISPATCH] Provider: ${emailConfig.provider}`);
-	console.log(`To: ${options.recipient}`);
-	console.log(`Subject: ${subject}`);
-	console.log(`VIP Code: ${options.code}`);
-	console.log(`Registration URL: ${registrationUrl}`);
-	console.log(`======================================================\n`);
-
-	return {
-		success: true,
-		provider: emailConfig.provider || 'console',
-		previewUrl: registrationUrl
-	};
-}
-
-export interface WorkspaceInviteEmailOptions {
-	recipient: string;
-	workspaceName: string;
-	joinUrl: string;
-	inviterName?: string;
-	appName?: string;
-	role?: string;
-}
-
 export function generateWorkspaceInviteHtml(options: {
 	workspaceName: string;
 	joinUrl: string;
@@ -284,27 +210,74 @@ export function generateWorkspaceInviteHtml(options: {
 </html>`;
 }
 
-export async function sendWorkspaceInviteEmail(options: WorkspaceInviteEmailOptions): Promise<{
-	success: boolean;
-	provider: string;
-	messageId?: string;
-	previewUrl?: string;
-	error?: string;
-}> {
+/**
+ * Low-level email dispatcher that resolves configured transport (SMTP / Resend / Console).
+ */
+export async function dispatchEmail(options: DispatchEmailOptions): Promise<EmailDispatchResult> {
 	const emailConfig = await getSiteSetting<SiteEmailConfig>('email', DEFAULT_EMAIL_CONFIG);
 	const generalConfig = await getSiteSetting<SiteGeneralConfig>('general', DEFAULT_GENERAL_CONFIG);
+
 	const appName = generalConfig.siteTitle || 'Run';
+	const fromAddress = emailConfig.fromEmail?.trim() || emailConfig.smtpUser?.trim() || 'noreply@run.link';
+	const fromName = emailConfig.fromName?.trim() || appName;
+	const formattedFrom = `"${fromName}" <${fromAddress}>`;
 
-	const htmlBody = generateWorkspaceInviteHtml({
-		workspaceName: options.workspaceName,
-		joinUrl: options.joinUrl,
-		inviterName: options.inviterName,
-		appName,
-		role: options.role
-	});
+	// 1. SMTP Provider (Nodemailer)
+	if (emailConfig.provider === 'smtp') {
+		if (!emailConfig.smtpHost) {
+			return {
+				success: false,
+				provider: 'smtp',
+				error: 'SMTP host is empty. Please enter your SMTP server in Admin Settings.'
+			};
+		}
 
-	const subject = `You're invited to join ${options.workspaceName} on ${appName}`;
+		try {
+			const port = Number(emailConfig.smtpPort) || 587;
+			const isSecure = port === 465;
 
+			const transporter = nodemailer.createTransport({
+				host: emailConfig.smtpHost,
+				port,
+				secure: isSecure,
+				auth: emailConfig.smtpUser
+					? {
+							user: emailConfig.smtpUser,
+							pass: emailConfig.smtpPass || ''
+						}
+					: undefined,
+				connectionTimeout: 12000,
+				greetingTimeout: 12000,
+				socketTimeout: 15000,
+				tls: {
+					rejectUnauthorized: !emailConfig.smtpHost.includes('localhost')
+				}
+			});
+
+			const info = await transporter.sendMail({
+				from: formattedFrom,
+				to: options.to,
+				subject: options.subject,
+				text: options.text || options.html.replace(/<[^>]+>/g, ''),
+				html: options.html
+			});
+
+			return {
+				success: true,
+				provider: 'smtp',
+				messageId: info.messageId
+			};
+		} catch (err: any) {
+			console.error('[SMTP Transport Error]:', err);
+			return {
+				success: false,
+				provider: 'smtp',
+				error: err.message || 'SMTP delivery failed'
+			};
+		}
+	}
+
+	// 2. Resend API Provider
 	if (emailConfig.provider === 'resend' || emailConfig.resendApiKey) {
 		const apiKey = emailConfig.resendApiKey || process.env.RESEND_API_KEY;
 		if (apiKey) {
@@ -321,14 +294,16 @@ export async function sendWorkspaceInviteEmail(options: WorkspaceInviteEmailOpti
 					},
 					body: JSON.stringify({
 						from,
-						to: [options.recipient],
-						subject,
-						html: htmlBody
+						to: [options.to],
+						subject: options.subject,
+						html: options.html,
+						text: options.text
 					})
 				});
 
 				const data = (await res.json()) as any;
 				if (!res.ok) {
+					console.error('Resend API error:', data);
 					return {
 						success: false,
 						provider: 'resend',
@@ -339,25 +314,139 @@ export async function sendWorkspaceInviteEmail(options: WorkspaceInviteEmailOpti
 				return {
 					success: true,
 					provider: 'resend',
-					messageId: data.id,
-					previewUrl: options.joinUrl
+					messageId: data.id
 				};
 			} catch (err: any) {
+				console.error('Failed to dispatch via Resend:', err);
 				return { success: false, provider: 'resend', error: err.message };
 			}
 		}
 	}
 
+	// 3. Console fallback (or development mode)
 	console.log(`\n======================================================`);
-	console.log(`[WORKSPACE INVITE EMAIL DISPATCH] Provider: ${emailConfig.provider}`);
-	console.log(`To: ${options.recipient}`);
-	console.log(`Workspace: ${options.workspaceName}`);
-	console.log(`Join URL: ${options.joinUrl}`);
+	console.log(`[EMAIL DISPATCH - CONSOLE MOCK] Provider: ${emailConfig.provider}`);
+	console.log(`To: ${options.to}`);
+	console.log(`Subject: ${options.subject}`);
 	console.log(`======================================================\n`);
 
 	return {
 		success: true,
-		provider: emailConfig.provider || 'console',
+		provider: emailConfig.provider || 'console'
+	};
+}
+
+/**
+ * Dispatches the invitation email via configured provider (Resend / SMTP / Console)
+ */
+export async function sendInviteEmail(options: InviteEmailOptions): Promise<EmailDispatchResult> {
+	const generalConfig = await getSiteSetting<SiteGeneralConfig>('general', DEFAULT_GENERAL_CONFIG);
+	const appName = generalConfig.siteTitle || 'Run';
+	const origin = options.origin || generalConfig.siteUrl || 'http://localhost:5173';
+	const registrationUrl = `${origin.replace(/\/$/, '')}/login?code=${encodeURIComponent(options.code)}`;
+
+	const htmlBody = generateInviteEmailHtml({
+		code: options.code,
+		appName,
+		origin,
+		role: options.role,
+		maxUses: options.maxUses,
+		inviterName: options.inviterName
+	});
+
+	const subject = `You're invited to ${appName} (VIP Invite: ${options.code})`;
+
+	const result = await dispatchEmail({
+		to: options.recipient,
+		subject,
+		html: htmlBody,
+		text: `You're invited to join ${appName}. Use invite code: ${options.code}. Register at: ${registrationUrl}`
+	});
+
+	return {
+		...result,
+		previewUrl: registrationUrl
+	};
+}
+
+/**
+ * Dispatches a team/workspace invitation email.
+ */
+export async function sendWorkspaceInviteEmail(options: WorkspaceInviteEmailOptions): Promise<EmailDispatchResult> {
+	const generalConfig = await getSiteSetting<SiteGeneralConfig>('general', DEFAULT_GENERAL_CONFIG);
+	const appName = generalConfig.siteTitle || 'Run';
+
+	const htmlBody = generateWorkspaceInviteHtml({
+		workspaceName: options.workspaceName,
+		joinUrl: options.joinUrl,
+		inviterName: options.inviterName,
+		appName,
+		role: options.role
+	});
+
+	const subject = `You're invited to join ${options.workspaceName} on ${appName}`;
+
+	const result = await dispatchEmail({
+		to: options.recipient,
+		subject,
+		html: htmlBody,
+		text: `You're invited to collaborate on ${options.workspaceName} on ${appName}. Join here: ${options.joinUrl}`
+	});
+
+	return {
+		...result,
 		previewUrl: options.joinUrl
 	};
+}
+
+/**
+ * Sends a verified test email to validate SMTP or Resend transport settings.
+ */
+export async function sendTestEmail(recipient: string): Promise<EmailDispatchResult> {
+	const generalConfig = await getSiteSetting<SiteGeneralConfig>('general', DEFAULT_GENERAL_CONFIG);
+	const emailConfig = await getSiteSetting<SiteEmailConfig>('email', DEFAULT_EMAIL_CONFIG);
+	const appName = generalConfig.siteTitle || 'Run';
+
+	const subject = `[${appName}] Test Email Notification (${emailConfig.provider.toUpperCase()})`;
+	const now = new Date().toUTCString();
+
+	const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Test Email</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #121215; border: 1px solid #27272a; border-radius: 16px; padding: 32px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+          <tr>
+            <td>
+              <h2 style="color: #ffffff; margin-top: 0; font-size: 20px;">Email Transport Verified</h2>
+              <p style="color: #a1a1aa; line-height: 1.6; font-size: 14px;">
+                Congratulations! This test email confirms that your email transport settings on <strong>${appName}</strong> are properly configured and working.
+              </p>
+              <div style="background-color: #09090b; border: 1px dashed #3f3f46; border-radius: 10px; padding: 14px 18px; margin: 24px 0;">
+                <span style="display: block; font-size: 11px; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em; margin-bottom: 4px;">Delivery Status</span>
+                <span style="font-size: 14px; font-weight: 700; color: #10b981; font-family: monospace;">SUCCESS &bull; Dispatched via ${emailConfig.provider.toUpperCase()}</span>
+              </div>
+              <p style="color: #52525b; font-size: 12px; margin: 0;">
+                Recipient: ${recipient} &bull; Time: ${now}
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+	return dispatchEmail({
+		to: recipient,
+		subject,
+		html,
+		text: `[${appName}] Test email. Your email configuration (${emailConfig.provider}) is working correctly.`
+	});
 }

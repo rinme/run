@@ -21,7 +21,7 @@ import {
 	type SiteFeaturesConfig
 } from '#lib/server/settings.ts';
 import { createInviteCode } from '#lib/server/invites.ts';
-import { sendInviteEmail } from '#lib/server/email.ts';
+import { sendInviteEmail, sendTestEmail } from '#lib/server/email.ts';
 import { DATASET_METADATA } from '#lib/server/backup-service.ts';
 import { eq, desc, count, sql, and, ne } from 'drizzle-orm';
 
@@ -158,6 +158,33 @@ export const actions: Actions = {
 
 		await setSiteSetting('email', emailConfig);
 		return { success: true, message: 'Email & SMTP transport settings updated' };
+	},
+
+	testEmail: async (event) => {
+		if (!event.locals.user?.id) throw redirect(302, '/login');
+
+		const formData = await event.request.formData();
+		const recipient =
+			formData.get('testRecipient')?.toString().trim() ||
+			event.locals.user.email ||
+			'';
+
+		if (!recipient || !recipient.includes('@')) {
+			return fail(400, { message: 'A valid email address is required for the test email' });
+		}
+
+		try {
+			const result = await sendTestEmail(recipient);
+			if (!result.success) {
+				return fail(400, { message: `Email dispatch failed (${result.provider}): ${result.error}` });
+			}
+			return {
+				success: true,
+				message: `Test email sent to ${recipient} via ${result.provider.toUpperCase()}!`
+			};
+		} catch (err: any) {
+			return fail(500, { message: err.message || 'Failed to send test email' });
+		}
 	},
 
 	updateFeatures: async (event) => {

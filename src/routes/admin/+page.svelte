@@ -444,19 +444,31 @@
 				</div>
 
 				<form method="post" action="?/updateEmail" use:enhance class="space-y-3">
+					<div>
+						<label for="cfgEmailProvider" class="block text-[11px] font-medium text-zinc-400 mb-1">Provider Engine</label>
+						<select
+							id="cfgEmailProvider"
+							name="provider"
+							value={data.settings.email.provider}
+							class="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-100 font-mono focus:border-zinc-500 focus:outline-none"
+						>
+							<option value="console">Console (Dev / Mock)</option>
+							<option value="smtp">Custom SMTP Server (Yahoo, Gmail, Mailgun, Postmark, etc.)</option>
+							<option value="resend">Resend API</option>
+						</select>
+					</div>
+
 					<div class="grid grid-cols-2 gap-3">
 						<div>
-							<label for="cfgEmailProvider" class="block text-[11px] font-medium text-zinc-400 mb-1">Provider Engine</label>
-							<select
-								id="cfgEmailProvider"
-								name="provider"
-								value={data.settings.email.provider}
+							<label for="cfgFromName" class="block text-[11px] font-medium text-zinc-400 mb-1">Sender Name</label>
+							<input
+								id="cfgFromName"
+								type="text"
+								name="fromName"
+								value={data.settings.email.fromName || 'Run'}
+								placeholder="Run Platform"
 								class="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-100 font-mono focus:border-zinc-500 focus:outline-none"
-							>
-								<option value="console">Console (Dev / Mock)</option>
-								<option value="smtp">Custom SMTP Server</option>
-								<option value="resend">Resend API</option>
-							</select>
+							/>
 						</div>
 						<div>
 							<label for="cfgFromEmail" class="block text-[11px] font-medium text-zinc-400 mb-1">Sender Email</label>
@@ -465,6 +477,7 @@
 								type="email"
 								name="fromEmail"
 								value={data.settings.email.fromEmail}
+								placeholder="you@domain.com"
 								required
 								class="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-100 font-mono focus:border-zinc-500 focus:outline-none"
 							/>
@@ -479,7 +492,7 @@
 								type="text"
 								name="smtpHost"
 								value={data.settings.email.smtpHost}
-								placeholder="smtp.mailgun.org"
+								placeholder="smtp.mail.yahoo.com"
 								class="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-100 font-mono focus:border-zinc-500 focus:outline-none"
 							/>
 						</div>
@@ -490,8 +503,10 @@
 								type="number"
 								name="smtpPort"
 								value={data.settings.email.smtpPort}
+								placeholder="587"
 								class="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-100 font-mono focus:border-zinc-500 focus:outline-none"
 							/>
+							<p class="text-[9px] text-zinc-500 mt-0.5">587 (TLS) or 465 (SSL)</p>
 						</div>
 					</div>
 
@@ -503,11 +518,12 @@
 								type="text"
 								name="smtpUser"
 								value={data.settings.email.smtpUser}
+								placeholder="user@example.com"
 								class="w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-100 font-mono focus:border-zinc-500 focus:outline-none"
 							/>
 						</div>
 						<div>
-							<label for="cfgSmtpPass" class="block text-[11px] font-medium text-zinc-400 mb-1">SMTP Password</label>
+							<label for="cfgSmtpPass" class="block text-[11px] font-medium text-zinc-400 mb-1">SMTP Password / App Password</label>
 							<input
 								id="cfgSmtpPass"
 								type="password"
@@ -533,12 +549,37 @@
 
 					<button
 						type="submit"
-						class="w-full py-1.5 rounded-md bg-zinc-100 text-zinc-950 text-xs font-semibold hover:bg-zinc-200 transition flex items-center justify-center gap-1.5"
+						class="w-full py-1.5 rounded-md bg-zinc-100 text-zinc-950 text-xs font-semibold hover:bg-zinc-200 transition flex items-center justify-center gap-1.5 cursor-pointer"
 					>
 						<Save class="w-3.5 h-3.5" />
 						Save Email Settings
 					</button>
 				</form>
+
+				<!-- Test Email Sender -->
+				<div class="pt-3 border-t border-zinc-800/80 space-y-2">
+					<div class="flex items-center justify-between">
+						<span class="text-[11px] font-medium text-zinc-300">Test Email Connection</span>
+						<span class="text-[10px] text-zinc-500">Sends a live verification message</span>
+					</div>
+					<form method="post" action="?/testEmail" use:enhance class="flex gap-2">
+						<input
+							type="email"
+							name="testRecipient"
+							placeholder="Recipient email address"
+							value={data.settings.email.fromEmail || ''}
+							required
+							class="flex-1 rounded-md border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-100 font-mono focus:border-zinc-500 focus:outline-none"
+						/>
+						<button
+							type="submit"
+							class="px-3 py-1.5 rounded-md bg-zinc-800 hover:bg-zinc-750 text-zinc-200 text-xs font-medium border border-zinc-700 transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+						>
+							<Send class="w-3 h-3 text-sky-400" />
+							Send Test
+						</button>
+					</form>
+				</div>
 			</div>
 
 			<!-- 4. Feature Toggles & Changelog Source -->
