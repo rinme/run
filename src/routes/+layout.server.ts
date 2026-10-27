@@ -40,6 +40,14 @@ export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
 	return {
 		user: locals.user ?? null,
 		session: locals.session ?? null,
+		impersonating: Boolean(locals.impersonator),
+		impersonator: locals.impersonator
+			? {
+					id: locals.impersonator.id,
+					name: locals.impersonator.name,
+					email: locals.impersonator.email
+				}
+			: null,
 		activeWorkspace,
 		userWorkspaces,
 		siteConfig: {

@@ -118,7 +118,15 @@
 					</div>
 
 					<div>
-						<label for="signin-password" class="block text-xs font-medium text-zinc-300 mb-1.5">Password</label>
+						<div class="flex items-center justify-between mb-1.5">
+							<label for="signin-password" class="block text-xs font-medium text-zinc-300">Password</label>
+							<a
+								href="/forgot-password"
+								class="text-[11px] text-zinc-400 hover:text-zinc-200 transition underline-offset-2 hover:underline"
+							>
+								Forgot password?
+							</a>
+						</div>
 						<div class="relative">
 							<Key class="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
 							<input

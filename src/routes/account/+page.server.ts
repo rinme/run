@@ -4,6 +4,8 @@ import { db } from '#lib/server/db/index.ts';
 import { user, session, inviteCodes } from '#lib/server/db/schema.ts';
 import { createInviteCode } from '#lib/server/invites.ts';
 import { auth } from '#lib/server/auth.ts';
+import { createForwardedHeaders } from '#lib/server/ip.ts';
+import { APIError } from 'better-auth/api';
 import { eq, and, desc } from 'drizzle-orm';
 
 export const load: PageServerLoad = async (event) => {
@@ -66,6 +68,48 @@ export const actions: Actions = {
 
 		await db.update(user).set({ name, updatedAt: new Date() }).where(eq(user.id, event.locals.user.id));
 		return { success: true, message: 'Profile updated successfully' };
+	},
+
+	changePassword: async (event) => {
+		if (!event.locals.user) throw redirect(302, '/login');
+
+		const formData = await event.request.formData();
+		const currentPassword = formData.get('currentPassword')?.toString() || '';
+		const newPassword = formData.get('newPassword')?.toString() || '';
+		const confirmPassword = formData.get('confirmPassword')?.toString() || '';
+		const revokeOtherSessions = formData.get('revokeOtherSessions') === 'true';
+
+		if (!currentPassword || !newPassword || !confirmPassword) {
+			return fail(400, { message: 'All password fields are required' });
+		}
+
+		if (newPassword !== confirmPassword) {
+			return fail(400, { message: 'New password and confirmation do not match' });
+		}
+
+		if (newPassword.length < 8) {
+			return fail(400, { message: 'New password must be at least 8 characters long' });
+		}
+
+		const headers = createForwardedHeaders(event);
+
+		try {
+			await auth.api.changePassword({
+				body: {
+					currentPassword,
+					newPassword,
+					revokeOtherSessions
+				},
+				headers
+			});
+
+			return { success: true, message: 'Password changed successfully' };
+		} catch (error) {
+			if (error instanceof APIError) {
+				return fail(400, { message: error.message || 'Failed to change password. Please verify current password.' });
+			}
+			return fail(500, { message: 'Password change error: ' + (error as Error).message });
+		}
 	},
 
 	revokeSession: async (event) => {

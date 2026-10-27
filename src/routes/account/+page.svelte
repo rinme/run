@@ -19,6 +19,13 @@
 
 	let copiedCode = $state<string | null>(null);
 	let isGeneratingInvite = $state(false);
+	let newPassword = $state('');
+	let confirmPassword = $state('');
+	let clientPasswordError = $state('');
+	let isChangingPassword = $state(false);
+
+	let passwordMismatch = $derived(confirmPassword.length > 0 && newPassword !== confirmPassword);
+	let passwordMatch = $derived(confirmPassword.length > 0 && newPassword === confirmPassword);
 
 	function copyToClipboard(text: string, id: string) {
 		navigator.clipboard.writeText(text);
@@ -148,7 +155,113 @@
 		</div>
 	</div>
 
-	<!-- Section 2: Active User Sessions -->
+	<!-- Section 2: Change Password & Security -->
+	<div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+		<h2 class="text-xs font-bold uppercase tracking-wider text-zinc-300 mb-1 font-mono flex items-center gap-2">
+			<KeyRound class="w-4 h-4 text-purple-400" />
+			Security & Password
+		</h2>
+		<p class="text-[11px] text-zinc-500 mb-4">
+			Update your password to keep your account secure.
+		</p>
+
+		{#if clientPasswordError}
+			<div class="mb-4 rounded-lg border border-red-500/20 bg-red-950/30 p-3 text-xs text-red-400">
+				{clientPasswordError}
+			</div>
+		{/if}
+
+		<form
+			method="post"
+			action="?/changePassword"
+			use:enhance={({ cancel }) => {
+				clientPasswordError = '';
+				if (newPassword !== confirmPassword) {
+					clientPasswordError = 'New password and confirmation do not match.';
+					cancel();
+					return;
+				}
+				isChangingPassword = true;
+				return async ({ update }) => {
+					isChangingPassword = false;
+					await update();
+				};
+			}}
+			class="space-y-4 max-w-lg"
+		>
+			<div>
+				<label for="currentPassword" class="block text-xs font-medium text-zinc-400 mb-1.5">Current Password</label>
+				<input
+					id="currentPassword"
+					type="password"
+					name="currentPassword"
+					required
+					autocomplete="current-password"
+					placeholder="••••••••••••"
+					class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none transition font-mono"
+				/>
+			</div>
+
+			<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+				<div>
+					<label for="newPassword" class="block text-xs font-medium text-zinc-400 mb-1.5">New Password</label>
+					<input
+						id="newPassword"
+						type="password"
+						name="newPassword"
+						bind:value={newPassword}
+						required
+						minlength="8"
+						autocomplete="new-password"
+						placeholder="At least 8 characters"
+						class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none transition font-mono"
+					/>
+				</div>
+
+				<div>
+					<label for="confirmPassword" class="block text-xs font-medium text-zinc-400 mb-1.5">Confirm New Password</label>
+					<input
+						id="confirmPassword"
+						type="password"
+						name="confirmPassword"
+						bind:value={confirmPassword}
+						required
+						minlength="8"
+						autocomplete="new-password"
+						placeholder="Re-enter new password"
+						class="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none transition font-mono"
+					/>
+				</div>
+			</div>
+
+			{#if passwordMismatch}
+				<p class="text-[11px] text-red-400">Passwords do not match</p>
+			{:else if passwordMatch}
+				<p class="text-[11px] text-emerald-400">Passwords match</p>
+			{/if}
+
+			<label class="flex items-center gap-2 text-xs text-zinc-400 cursor-pointer pt-1">
+				<input
+					type="checkbox"
+					name="revokeOtherSessions"
+					value="true"
+					checked
+					class="rounded border-zinc-700 bg-zinc-950 text-purple-600 focus:ring-0"
+				/>
+				<span>Log out of all other devices when password is changed</span>
+			</label>
+
+			<button
+				type="submit"
+				disabled={isChangingPassword}
+				class="px-4 py-2 rounded-lg bg-zinc-100 text-zinc-950 text-xs font-semibold hover:bg-zinc-200 transition disabled:opacity-50 cursor-pointer"
+			>
+				{isChangingPassword ? 'Updating...' : 'Update Password'}
+			</button>
+		</form>
+	</div>
+
+	<!-- Section 3: Active User Sessions -->
 	<div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
 		<div class="flex items-center justify-between mb-4">
 			<div>
@@ -204,6 +317,7 @@
 			{/each}
 		</div>
 	</div>
+
 
 	<!-- Section 3: VIP Invite Codes (Admin or Trusted only) -->
 	{#if data.user.role === 'admin' || data.user.role === 'trusted'}

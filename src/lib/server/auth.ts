@@ -5,12 +5,22 @@ import { organization, bearer } from 'better-auth/plugins';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { getRequestEvent } from '$app/server';
 import { db } from '#lib/server/db/index.ts';
+import { sendPasswordResetEmail } from '#lib/server/email.ts';
 
 export const auth = betterAuth({
 	baseURL: ORIGIN,
 	secret: BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: 'sqlite' }),
-	emailAndPassword: { enabled: true },
+	emailAndPassword: {
+		enabled: true,
+		sendResetPassword: async ({ user, url, token }) => {
+			await sendPasswordResetEmail({
+				recipient: user.email,
+				userName: user.name,
+				resetUrl: url
+			});
+		}
+	},
 	advanced: {
 		ipAddress: {
 			ipAddressHeaders: [

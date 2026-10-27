@@ -2,7 +2,7 @@ import type { Handle } from '@sveltejs/kit/hooks';
 import { building } from '$app/env';
 import { auth } from '#lib/server/auth.ts';
 import { db } from '#lib/server/db/index.ts';
-import { session as sessionTable } from '#lib/server/db/schema.ts';
+import { session as sessionTable, user as userTable } from '#lib/server/db/schema.ts';
 import { eq } from 'drizzle-orm';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import { resolveShortLink } from '#lib/server/resolver.ts';
@@ -54,11 +54,35 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
+	// 2.5 Impersonation (Spectator Mode for Admins)
+	if (event.locals.user?.role === 'admin') {
+		const impersonateTargetId = event.cookies.get('run_impersonate_target_id');
+		if (impersonateTargetId && impersonateTargetId !== event.locals.user.id) {
+			const targetUser = await db
+				.select()
+				.from(userTable)
+				.where(eq(userTable.id, impersonateTargetId))
+				.get();
+
+			if (targetUser) {
+				event.locals.impersonator = event.locals.user;
+				event.locals.user = targetUser as App.ExtendedUser;
+			} else {
+				// Target no longer exists
+				event.cookies.delete('run_impersonate_target_id', { path: '/' });
+			}
+		}
+	}
+
 	// 3. Global Auth Guard: protect all private dashboard pages from unauthenticated access
 	const pathname = event.url.pathname;
 	const isPublicRoute =
 		pathname === '/login' ||
 		pathname.startsWith('/login/') ||
+		pathname === '/forgot-password' ||
+		pathname.startsWith('/forgot-password/') ||
+		pathname === '/reset-password' ||
+		pathname.startsWith('/reset-password/') ||
 		pathname.startsWith('/invite/') ||
 		pathname.startsWith('/workspace/join') ||
 		pathname.startsWith('/api/') ||

@@ -11,6 +11,7 @@ declare global {
 		interface Locals {
 			user?: ExtendedUser;
 			session?: Session;
+			impersonator?: ExtendedUser;
 		}
 
 		// interface Error {}

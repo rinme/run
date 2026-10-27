@@ -1,5 +1,5 @@
 # Run — AI Agent Handbook & Machine Protocol Guide
-**Version:** 2.6.5  
+**Version:** 2.7.0  
 **Target:** Autonomous AI Agents, LLM Integrators, MCP Clients & Automated Workflow Engines
 
 ---
@@ -359,7 +359,29 @@ erDiagram
 
 ---
 
-## 8. Agentic Operating Guidelines & Release Protocol
+## 8. Modular Administration & User Lifecycle
+
+### 1. Dedicated Admin Subroutes
+- `/admin`: Command Center overview with system vitals, portal navigation cards, and recent registrations.
+- `/admin/users`: User Accounts dashboard with search, role modification (`member`, `trusted`, `admin`, `suspended`), direct password reset, email reset link dispatch, session termination, account deletion, and **Spectate Mode**.
+- `/admin/settings`: Modular system configuration tabs (General, Registration & Auth, Email/SMTP server with test dispatcher, Feature flags).
+- `/admin/invites`: VIP invite code generation and dispatch management.
+- `/admin/backup`: Disaster recovery export and AES-256 encrypted restore.
+- `/admin/sessions`: Active bearer token and IP tracking with one-click revocation.
+
+### 2. Spectate (Impersonation) Mode
+- Admins can spectate any non-admin user account to view their dashboard, links, and workspace.
+- Managed securely via the `run_impersonate_target_id` cookie.
+- Renders a global sticky warning banner with a 1-click **Exit Spectating** button that restores the admin session without requiring re-authentication.
+
+### 3. Password Reset & Self-Service Security
+- `/account`: Dedicated "Security & Password" card allowing authenticated users to change their password with current password verification and live match checks.
+- `/forgot-password`: Public self-service flow dispatching branded HTML password reset emails via Better-Auth and configured SMTP credentials.
+- `/reset-password`: Token verification interface allowing users to set a new password.
+
+---
+
+## 9. Agentic Operating Guidelines & Release Protocol
 
 1. **Strict Bun Environment**:
    - Always run commands via `bun` (`bun run`, `bun test`, `bunx`).

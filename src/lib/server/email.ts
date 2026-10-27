@@ -450,3 +450,113 @@ export async function sendTestEmail(recipient: string): Promise<EmailDispatchRes
 		text: `[${appName}] Test email. Your email configuration (${emailConfig.provider}) is working correctly.`
 	});
 }
+
+export interface PasswordResetEmailOptions {
+	recipient: string;
+	resetUrl: string;
+	userName?: string;
+	appName?: string;
+}
+
+export function generatePasswordResetHtml(options: {
+	resetUrl: string;
+	userName?: string;
+	appName?: string;
+}): string {
+	const appName = options.appName || 'Run';
+	const greeting = options.userName ? `Hello ${options.userName},` : 'Hello,';
+
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset your password for ${appName}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #09090b; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f4f4f5;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #09090b; padding: 40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 520px; background-color: #121215; border: 1px solid #27272a; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+          <tr>
+            <td style="padding: 32px 32px 20px 32px; border-bottom: 1px solid #1f1f23; text-align: left;">
+              <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="background-color: #f59e0b; width: 28px; height: 28px; border-radius: 8px; text-align: center; vertical-align: middle;">
+                    <span style="color: #09090b; font-size: 16px; font-weight: 800; line-height: 28px;">⚡</span>
+                  </td>
+                  <td style="padding-left: 12px;">
+                    <span style="font-size: 16px; font-weight: 700; color: #ffffff; letter-spacing: -0.02em;">${appName}</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 32px 32px 28px 32px;">
+              <h1 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 700; color: #ffffff; letter-spacing: -0.01em;">
+                Reset your password
+              </h1>
+              <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #a1a1aa;">
+                ${greeting}
+              </p>
+              <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #a1a1aa;">
+                We received a request to reset the password for your <strong style="color: #f4f4f5;">${appName}</strong> account. Click the button below to choose a new password:
+              </p>
+
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="${options.resetUrl}" target="_blank" style="display: block; width: 100%; box-sizing: border-box; background-color: #f4f4f5; color: #09090b; font-size: 14px; font-weight: 600; text-align: center; text-decoration: none; padding: 14px 24px; border-radius: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);">
+                      Reset Password &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #71717a; text-align: center;">
+                This link will expire in 1 hour. If you didn't request a password reset, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 20px 32px; background-color: #0d0d10; border-top: 1px solid #1f1f23; text-align: center;">
+              <p style="margin: 0; font-size: 11px; color: #3f3f46; word-break: break-all;">
+                Direct link: <a href="${options.resetUrl}" style="color: #71717a; text-decoration: underline;">${options.resetUrl}</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendPasswordResetEmail(options: PasswordResetEmailOptions): Promise<EmailDispatchResult> {
+	const generalConfig = await getSiteSetting<SiteGeneralConfig>('general', DEFAULT_GENERAL_CONFIG);
+	const appName = generalConfig.siteTitle || 'Run';
+
+	const htmlBody = generatePasswordResetHtml({
+		resetUrl: options.resetUrl,
+		userName: options.userName,
+		appName
+	});
+
+	const subject = `Reset your password for ${appName}`;
+
+	const result = await dispatchEmail({
+		to: options.recipient,
+		subject,
+		html: htmlBody,
+		text: `Reset your password for ${appName}: ${options.resetUrl}`
+	});
+
+	return {
+		...result,
+		previewUrl: options.resetUrl
+	};
+}
