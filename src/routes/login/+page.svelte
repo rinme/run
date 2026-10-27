@@ -7,7 +7,15 @@
 
 	let activeTab = $state<'signin' | 'signup'>('signin');
 	let inviteCodeInput = $state('');
+	let signupPassword = $state('');
+	let signupConfirmPassword = $state('');
+	let clientError = $state('');
 	let isSubmitting = $state(false);
+
+	function switchTab(tab: 'signin' | 'signup') {
+		activeTab = tab;
+		clientError = '';
+	}
 
 	$effect(() => {
 		if (data.isFirstUser || data.initialInviteCode || form?.mode === 'signup') {
@@ -48,7 +56,7 @@
 			<div class="flex items-center p-1 rounded-lg bg-zinc-950 border border-zinc-800/80 mb-6">
 				<button
 					type="button"
-					onclick={() => (activeTab = 'signin')}
+					onclick={() => switchTab('signin')}
 					class="flex-1 py-1.5 text-xs font-medium rounded-md transition {activeTab === 'signin'
 						? 'bg-zinc-800 text-zinc-100 shadow-sm'
 						: 'text-zinc-400 hover:text-zinc-200'}"
@@ -57,7 +65,7 @@
 				</button>
 				<button
 					type="button"
-					onclick={() => (activeTab = 'signup')}
+					onclick={() => switchTab('signup')}
 					class="flex-1 py-1.5 text-xs font-medium rounded-md transition {activeTab === 'signup'
 						? 'bg-zinc-800 text-zinc-100 shadow-sm'
 						: 'text-zinc-400 hover:text-zinc-200'}"
@@ -72,10 +80,10 @@
 			</div>
 
 			<!-- Error Feedback Alert -->
-			{#if form?.message}
+			{#if clientError || form?.message}
 				<div class="mb-5 rounded-lg border border-red-500/20 bg-red-950/30 p-3 text-xs text-red-400 flex items-start gap-2.5">
 					<span class="font-bold">Error:</span>
-					<span>{form.message}</span>
+					<span>{clientError || form?.message}</span>
 				</div>
 			{/if}
 
@@ -152,7 +160,13 @@
 					<form
 						method="post"
 						action="?/signUp"
-						use:enhance={() => {
+						use:enhance={({ cancel }) => {
+							clientError = '';
+							if (signupPassword !== signupConfirmPassword) {
+								clientError = 'Passwords do not match';
+								cancel();
+								return;
+							}
 							isSubmitting = true;
 							return async ({ update }) => {
 								isSubmitting = false;
@@ -264,6 +278,7 @@
 									id="signup-password"
 									type="password"
 									name="password"
+									bind:value={signupPassword}
 									required
 									minlength="8"
 									placeholder="At least 8 characters"
@@ -271,6 +286,29 @@
 									class="w-full rounded-lg border border-zinc-800 bg-zinc-950 pl-9 pr-3.5 py-2 text-xs text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none transition font-mono"
 								/>
 							</div>
+						</div>
+
+						<div>
+							<label for="signup-confirm-password" class="block text-xs font-medium text-zinc-300 mb-1.5">Confirm Password</label>
+							<div class="relative">
+								<Key class="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+								<input
+									id="signup-confirm-password"
+									type="password"
+									name="confirmPassword"
+									bind:value={signupConfirmPassword}
+									required
+									minlength="8"
+									placeholder="Re-enter your password"
+									autocomplete="new-password"
+									class="w-full rounded-lg border border-zinc-800 bg-zinc-950 pl-9 pr-3.5 py-2 text-xs text-zinc-100 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none transition font-mono"
+								/>
+							</div>
+							{#if signupConfirmPassword && signupPassword !== signupConfirmPassword}
+								<p class="text-[11px] text-red-400 mt-1">Passwords do not match</p>
+							{:else if signupConfirmPassword && signupPassword === signupConfirmPassword}
+								<p class="text-[11px] text-emerald-400 mt-1">Passwords match</p>
+							{/if}
 						</div>
 
 						<button

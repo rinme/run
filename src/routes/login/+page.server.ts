@@ -72,10 +72,23 @@ export const actions: Actions = {
 		const name = formData.get('name')?.toString().trim() ?? '';
 		const email = formData.get('email')?.toString().trim().toLowerCase() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
+		const confirmPassword = formData.get('confirmPassword')?.toString() ?? '';
 		const inviteCode = formData.get('inviteCode')?.toString().trim() ?? '';
 
 		if (!email || !password || !name) {
 			return fail(400, { message: 'Name, email, and password are required', mode: 'signup' });
+		}
+
+		if (!confirmPassword) {
+			return fail(400, { message: 'Please confirm your password', mode: 'signup' });
+		}
+
+		if (password !== confirmPassword) {
+			return fail(400, { message: 'Passwords do not match', mode: 'signup' });
+		}
+
+		if (password.length < 8) {
+			return fail(400, { message: 'Password must be at least 8 characters long', mode: 'signup' });
 		}
 
 		const [userCount] = await db.select({ total: count() }).from(user);
